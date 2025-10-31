@@ -22,14 +22,17 @@ export const CartComponent = () => {
     setItems(items.filter((item) => item.id !== id));
   };
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-6 mt-10 border">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900">Your Cart</h2>
+    <div className="mx-auto mt-10 max-w-2xl rounded-xl border p-6 shadow-md">
+      <h2 className="mb-4 text-xl font-semibold text-gray-900">Your Cart</h2>
 
       {items.length === 0 ? (
-        <p className="text-gray-500 text-sm">Your cart is empty.</p>
+        <p className="text-sm text-gray-500">Your cart is empty.</p>
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
@@ -45,27 +48,27 @@ export const CartComponent = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-gray-900 font-semibold">
+                <span className="font-semibold text-gray-900">
                   ${(item.price * item.quantity).toFixed(2)}
                 </span>
                 <button
                   onClick={() => removeItem(item.id)}
                   className="text-gray-500 hover:text-red-500"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
           ))}
 
-          <div className="flex justify-between items-center pt-4">
+          <div className="flex items-center justify-between pt-4">
             <span className="text-lg font-semibold text-gray-900">Total:</span>
             <span className="text-lg font-bold text-blue-600">
               ${total.toFixed(2)}
             </span>
           </div>
 
-          <Button className="w-full bg-black text-white hover:bg-gray-800 rounded-full mt-4">
+          <Button className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800">
             Proceed to Checkout
           </Button>
         </div>
