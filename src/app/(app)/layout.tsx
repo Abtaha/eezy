@@ -5,6 +5,9 @@ import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
+import { Header } from "@/components/layout-components/header";
+import { Footer } from "@/components/layout-components/footer";
+
 export const metadata: Metadata = {
   title: "Eezy",
   description: "Eezy Shopping Store",
@@ -22,7 +25,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <Header />
+        <main className="grow">
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+        </main>
+        <Footer />
       </body>
     </html>
   );
