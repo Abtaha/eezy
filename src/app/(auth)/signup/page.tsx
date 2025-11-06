@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Input } from "@/components/ui/input";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function SignupPage() {
       },
       {
         onSuccess: () => {
-          router.push("/"); // or "/(auth)/login" if you want
+          router.push("/login");
         },
       },
     );
@@ -47,13 +48,12 @@ export default function SignupPage() {
             <label className="text-sm font-medium" htmlFor="name">
               Name
             </label>
-            <input
+            <Input
               id="name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="border rounded-md px-3 py-2 bg-background"
             />
           </div>
 
@@ -61,14 +61,13 @@ export default function SignupPage() {
             <label className="text-sm font-medium" htmlFor="email">
               Email
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border rounded-md px-3 py-2 bg-background"
             />
           </div>
 
@@ -76,14 +75,13 @@ export default function SignupPage() {
             <label className="text-sm font-medium" htmlFor="password">
               Password
             </label>
-            <input
+            <Input
               id="password"
               type="password"
               autoComplete="new-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border rounded-md px-3 py-2 bg-background"
             />
           </div>
 
