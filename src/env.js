@@ -16,7 +16,8 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    RESEND_API_KEY: z.string().optional(),
+    RESEND_API_KEY: z.string(),
+    ABLY_API_KEY: z.string(),
   },
 
   /**
@@ -33,6 +34,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    ABLY_API_KEY: process.env.ABLY_API_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
