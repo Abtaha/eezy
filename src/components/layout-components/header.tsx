@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/sheet";
 import { CartComponent } from "@/components/layout-components/cart-component";
 
+import { UserMenu } from "@/components/layout-components/user-menu";
+
 type DropdownMenuProps = {
   title: string;
   href: string;
@@ -141,19 +143,7 @@ export const Header = () => {
             ></Search>
           </div>
 
-          <Link
-            href="/signup"
-            className="rounded-full bg-gray-300 px-4 py-1.5 text-gray-900 transition hover:bg-gray-400"
-          >
-            Sign up
-          </Link>
-
-          <Link
-            href="/login"
-            className="rounded-full bg-black px-4 py-1.5 text-white transition hover:bg-gray-600"
-          >
-            Log in
-          </Link>
+          <UserMenu />
 
           {/* Shopping Cart (slide-in drawer) */}
           <Sheet>
