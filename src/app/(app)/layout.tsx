@@ -4,7 +4,6 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
-
 import { Header } from "@/components/layout-components/header";
 import { Footer } from "@/components/layout-components/footer";
 
@@ -19,18 +18,16 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
-      <body>
-        <Header />
-        <main className="grow">
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </main>
-        <Footer />
-      </body>
-    </html>
+    <div className={geist.variable}>
+      <Header />
+      <main className="grow">
+        <TRPCReactProvider>{children}</TRPCReactProvider>
+      </main>
+      <Footer />
+    </div>
   );
 }
