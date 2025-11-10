@@ -6,6 +6,7 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Header } from "@/components/layout-components/header";
 import { Footer } from "@/components/layout-components/footer";
+import { CartProvider } from "@/context/cart-context";
 
 export const metadata: Metadata = {
   title: "Eezy",
@@ -25,9 +26,12 @@ export default function AppLayout({
     <div className={geist.variable}>
       <Header />
       <main className="grow">
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <CartProvider>
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+        </CartProvider>
       </main>
       <Footer />
     </div>
   );
 }
+

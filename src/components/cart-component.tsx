@@ -1,41 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
-type CartItem = {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-};
+import { useCart } from "@/context/cart-context";
 
 export const CartComponent = () => {
-  // Example cart items
-  const [items, setItems] = useState<CartItem[]>([
-    { id: 1, name: "White Shirt", price: 40, quantity: 1 },
-    { id: 2, name: "Blue Jeans", price: 60, quantity: 2 },
-  ]);
-
-  const removeItem = (id: number) => {
-    setItems(items.filter((item) => item.id !== id));
-  };
-
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
+  const { cart, removeItem, total } = useCart();
 
   return (
     <div className="mx-auto mt-10 max-w-2xl rounded-xl border p-6 shadow-md">
       <h2 className="mb-4 text-xl font-semibold text-gray-900">Your Cart</h2>
 
-      {items.length === 0 ? (
+      {cart.length === 0 ? (
         <p className="text-sm text-gray-500">Your cart is empty.</p>
       ) : (
         <div className="space-y-4">
-          {items.map((item) => (
+          {cart.map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between border-b pb-3"
