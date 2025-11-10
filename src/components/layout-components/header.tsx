@@ -13,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { CartComponent } from "@/components/layout-components/cart-component";
+import { CartComponent } from "@/components/cart-component";
 
 import { UserMenu } from "@/components/layout-components/user-menu";
 
