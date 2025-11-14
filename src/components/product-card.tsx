@@ -44,7 +44,7 @@ export default function ProductCard({ imageFront, imageBack, name, category, pri
       </p>
 
       <div className="flex items-center">
-        {[...Array(5)].map((_, index) => (
+        {Array.from({ length: 5 }).map((_, index) => (
           <span key={index} className="text-yellow-400">
             {index < rating ? '★' : '☆'}
           </span>

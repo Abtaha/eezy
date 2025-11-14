@@ -19,8 +19,8 @@ export function Hero() {
               materials.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link href="/category">
-                    <Button size="lg" className="gap-2 bg-black text-white hover:bg-gray-800 transition-colors rounded-none">
+                <Link href="/store">
+                    <Button size="lg" className="gap-2 bg-black text-white hover:bg-gray-800 transition-colors rounded-none cursor-pointer">
                         Shop Collection
                         <ArrowRight className="h-4 w-4" />
                     </Button>
