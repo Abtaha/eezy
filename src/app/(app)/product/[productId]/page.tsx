@@ -100,11 +100,77 @@ export default function ProductPage({ params }: { params: Promise<{ productId: s
           </div>
         </div>
         
-        {/* Comments Section - TODO */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Comments</h2>
-          <p className="text-gray-500 italic">Comments section coming soon...</p>
-        </div>
+        {/* Comments Section */}
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
+            
+            {/* Dummy Comments */}
+            <div className="space-y-6">
+                {/* Comment 1 */}
+                <div className="border-b border-gray-200 pb-4">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    M
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">Mew</span>
+                        <span className="text-sm text-gray-500">2 days ago</span>
+                    </div>
+                    <p className="text-gray-700">Absolutely love this hoodie! The fabric is so soft and the pink color is exactly as shown.</p>
+                    </div>
+                </div>
+                </div>
+
+                {/* Comment 2 */}
+                <div className="border-b border-gray-200 pb-4">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    S
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">Squirtle</span>
+                        <span className="text-sm text-gray-500">5 days ago</span>
+                    </div>
+                    <p className="text-gray-700">Fits true to size and the kangaroo pocket is surprisingly spacious. Already ordered two more in different colors.</p>
+                    </div>
+                </div>
+                </div>
+
+                {/* Comment 3 */}
+                <div className="border-b border-gray-200 pb-4">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    B
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">Bulbasaur</span>
+                        <span className="text-sm text-gray-500">1 week ago</span>
+                    </div>
+                    <p className="text-gray-700">Nice hoodie but runs a bit small. I usually wear M but needed L for a comfortable fit.</p>
+                    </div>
+                </div>
+                </div>
+
+                {/* Comment 4 */}
+                <div className="pb-4">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    M
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">Mewtwo</span>
+                        <span className="text-sm text-gray-500">2 weeks ago</span>
+                    </div>
+                    <p className="text-gray-700">Incredibly cozy. Highly recommend! ⭐⭐⭐⭐⭐</p>
+                    </div>
+                </div>
+                </div>
+            </div>
+            </div>
         
         {/* Related Products */}
         <div className="mb-8">
