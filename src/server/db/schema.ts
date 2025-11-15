@@ -1,4 +1,13 @@
-import { pgTable, text, timestamp, boolean, uuid, integer, serial, numeric } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  uuid,
+  integer,
+  serial,
+  numeric,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -64,6 +73,8 @@ export const product = pgTable("product", {
   id: uuid("id").primaryKey(),
   name: text("name").notNull(),
   model: text("model").notNull(),
+  frontImage: text("front_image").notNull(),
+  backImage: text("back_image").notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
@@ -74,3 +85,4 @@ export const product = pgTable("product", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
