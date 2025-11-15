@@ -58,6 +58,8 @@ export const productRouter = createTRPCRouter({
         productQuantityInStock: z.number().int().nonnegative(), //ensure non-negative integer for stock quantity
         productPrice: z.number().int().max(9999999999), // to ensure a maximum of 10 digits as in the product schema
         productWarrantyStatus: z.boolean(),
+        productFrontImage: z.string(),
+        productBackImage: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -71,6 +73,8 @@ export const productRouter = createTRPCRouter({
           quantityInStock: input.productQuantityInStock,
           price: (input.productPrice * 0.01).toFixed(2), //convert to string in 2-digits-after-decimal format
           warrantyStatus: input.productWarrantyStatus,
+          frontImage: input.productFrontImage,
+          backImage: input.productBackImage,
         })
         .returning();
 
