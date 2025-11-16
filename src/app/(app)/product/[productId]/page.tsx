@@ -1,7 +1,9 @@
 "use client"
 
 import ProductCard from '@/components/product-card';
-import { use } from 'react';
+import ProductRating from '@/components/product-rating';
+import CommentSection from '@/components/comment-section';
+import { use, useState } from 'react';
 
 // Dummy product data
 const DUMMY_PRODUCT = {
@@ -44,44 +46,138 @@ const RELATED_PRODUCTS = [
   }
 ];
 
+// Dummy comments
+const DUMMY_COMMENTS = [
+  {
+    id: "1",
+    authorName: "Mew",
+    authorInitial: "M",
+    avatarColor: "bg-pink-500",
+    text: "Absolutely love this hoodie! The fabric is so soft and the pink color is exactly as shown.",
+    timestamp: "2 days ago"
+  },
+  {
+    id: "2",
+    authorName: "Squirtle",
+    authorInitial: "S",
+    avatarColor: "bg-blue-500",
+    text: "Fits true to size and the kangaroo pocket is surprisingly spacious. Already ordered two more in different colors.",
+    timestamp: "5 days ago"
+  },
+  {
+    id: "3",
+    authorName: "Bulbasaur",
+    authorInitial: "B",
+    avatarColor: "bg-green-500",
+    text: "Nice hoodie but runs a bit small. I usually wear M but needed L for a comfortable fit.",
+    timestamp: "1 week ago"
+  },
+  {
+    id: "4",
+    authorName: "Mewtwo",
+    authorInitial: "M",
+    avatarColor: "bg-purple-500",
+    text: "Incredibly cozy. Highly recommend! ⭐⭐⭐⭐⭐",
+    timestamp: "2 weeks ago"
+  }
+];
+
 export default function ProductPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = use(params);
+  const [currentImage, setCurrentImage] = useState<'front' | 'back'>('front');
   
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
         
-        {/* Product ID Display (for debugging)
-        <p className="text-sm text-gray-500 mb-4">Product ID: {productId}</p>*/}
-        
         {/* Main Product Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="grid md:grid-cols-2 gap-8">
             
-            {/* Product Card */}
-            <div>
-              <ProductCard {...DUMMY_PRODUCT} />
+            {/* LEFT SIDE: Product Images */}
+            <div className="space-y-4">
+              {/* Main Image Display */}
+              <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img 
+                  src={currentImage === 'front' ? DUMMY_PRODUCT.imageFront : DUMMY_PRODUCT.imageBack}
+                  alt={DUMMY_PRODUCT.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              {/* Image Thumbnails */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setCurrentImage('front')}
+                  className={`flex-1 aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                    currentImage === 'front' 
+                      ? 'border-blue-500 ring-2 ring-blue-200' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <img 
+                    src={DUMMY_PRODUCT.imageFront}
+                    alt="Front view"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+                
+                <button
+                  onClick={() => setCurrentImage('back')}
+                  className={`flex-1 aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                    currentImage === 'back' 
+                      ? 'border-blue-500 ring-2 ring-blue-200' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <img 
+                    src={DUMMY_PRODUCT.imageBack}
+                    alt="Back view"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              </div>
             </div>
             
-            {/* Product Details */}
-            <div>
+            {/* RIGHT SIDE: Product Details */}
+            <div className="flex flex-col">
+              {/* Product Name & Category */}
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {DUMMY_PRODUCT.name}
               </h1>
               <p className="text-gray-600 mb-4">{DUMMY_PRODUCT.category}</p>
               
-              <p className="text-4xl font-bold text-gray-900 mb-4">
+              {/* Rating Display */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className={i < DUMMY_PRODUCT.rating ? 'text-yellow-400' : 'text-gray-300'}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-600">
+                  ({DUMMY_PRODUCT.rating} stars)
+                </span>
+              </div>
+              
+              {/* Price */}
+              <p className="text-4xl font-bold text-gray-900 mb-6">
                 ${DUMMY_PRODUCT.price.toFixed(2)}
               </p>
               
+              {/* Description */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2">Description</h2>
-                <p className="text-gray-700">{DUMMY_PRODUCT.description}</p>
+                <p className="text-gray-700 leading-relaxed">{DUMMY_PRODUCT.description}</p>
               </div>
               
+              {/* Stock Info */}
               <div className="mb-6">
                 <p className="text-sm text-gray-600">
-                  Stock: <span className="font-semibold">{DUMMY_PRODUCT.stock} available</span>
+                  Stock: <span className={`font-semibold ${DUMMY_PRODUCT.stock > 5 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {DUMMY_PRODUCT.stock} available
+                  </span>
                 </p>
               </div>
               
@@ -100,77 +196,14 @@ export default function ProductPage({ params }: { params: Promise<{ productId: s
           </div>
         </div>
         
+        {/* Rating Component - Only shown when logged in */}
+        <ProductRating 
+          productId={productId} 
+          isLoggedIn={true}  // TODO: Connect to actual auth later - set to true for testing
+        />
+        
         {/* Comments Section */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
-            
-            {/* Dummy Comments */}
-            <div className="space-y-6">
-                {/* Comment 1 */}
-                <div className="border-b border-gray-200 pb-4">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    M
-                    </div>
-                    <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">Mew</span>
-                        <span className="text-sm text-gray-500">2 days ago</span>
-                    </div>
-                    <p className="text-gray-700">Absolutely love this hoodie! The fabric is so soft and the pink color is exactly as shown.</p>
-                    </div>
-                </div>
-                </div>
-
-                {/* Comment 2 */}
-                <div className="border-b border-gray-200 pb-4">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    S
-                    </div>
-                    <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">Squirtle</span>
-                        <span className="text-sm text-gray-500">5 days ago</span>
-                    </div>
-                    <p className="text-gray-700">Fits true to size and the kangaroo pocket is surprisingly spacious. Already ordered two more in different colors.</p>
-                    </div>
-                </div>
-                </div>
-
-                {/* Comment 3 */}
-                <div className="border-b border-gray-200 pb-4">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    B
-                    </div>
-                    <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">Bulbasaur</span>
-                        <span className="text-sm text-gray-500">1 week ago</span>
-                    </div>
-                    <p className="text-gray-700">Nice hoodie but runs a bit small. I usually wear M but needed L for a comfortable fit.</p>
-                    </div>
-                </div>
-                </div>
-
-                {/* Comment 4 */}
-                <div className="pb-4">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    M
-                    </div>
-                    <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900">Mewtwo</span>
-                        <span className="text-sm text-gray-500">2 weeks ago</span>
-                    </div>
-                    <p className="text-gray-700">Incredibly cozy. Highly recommend! ⭐⭐⭐⭐⭐</p>
-                    </div>
-                </div>
-                </div>
-            </div>
-            </div>
+        <CommentSection comments={DUMMY_COMMENTS} />
         
         {/* Related Products */}
         <div className="mb-8">
