@@ -86,3 +86,17 @@ export const product = pgTable("product", {
     .notNull(),
 });
 
+export const cart = pgTable("cart", {
+  id: serial("id").primaryKey(),
+  userID: text("user_id").notNull().references(() => user.id, { onDelete: "cascade"}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+});
+
+export const cartItem = pgTable("cart_item", {
+  id: serial("id").primaryKey(),
+  cartID: integer("cart_id").notNull().references(() => cart.id, { onDelete:"cascade"}),
+  productID: uuid("product_id").notNull().references(() => product.id),
+  quantity: integer("quantity").default(1).notNull(),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+});
