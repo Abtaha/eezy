@@ -9,6 +9,8 @@ import {
   numeric,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -100,3 +102,45 @@ export const cartItem = pgTable("cart_item", {
   quantity: integer("quantity").default(1).notNull(),
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
+
+/* User - Cart Relation
+Drizzle uses many because the cart table holds the userID as foreign key,
+but app will create only one active cart per user.
+*/
+export const userRelations = relations(user, ({ many }) => ({
+  carts: many(cart),
+}));
+
+/* Product - CartItem Relation
+Product can appear in many cart items
+*/
+export const productRelations = relations(product, ({ many }) => ({
+  cartItems: many(cartItem),
+}));
+
+/* Cart - User - CartItem Relation
+Each cart belongs to one user
+Each cart can have multiple items
+*/
+export const cartRelations = relations(cart, ({ one, many }) => ({
+  user: one(user, {
+    fields: [cart.userID],
+    references: [user.id],
+  }),
+  items: many(cartItem),
+}));
+
+/* CartItem - Cart - Product Relation
+Each item belongs to one cart
+Each item references one product
+*/
+export const cartItemRelations = relations(cartItem, ({ one }) => ({
+  cart: one(cart, {
+    fields: [cartItem.cartID],
+    references: [cart.id],
+  }),
+  product: one(product, {
+    fields: [cartItem.productID],
+    references: [product.id],
+  }),
+}));
