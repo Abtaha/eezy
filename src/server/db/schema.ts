@@ -10,6 +10,7 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -87,6 +88,58 @@ export const product = pgTable("product", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export const cart = pgTable("cart", {
+  id: serial("id").primaryKey(),
+  userID: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const cartItem = pgTable("cart_item", {
+  id: serial("id").primaryKey(),
+  cartID: integer("cart_id")
+    .notNull()
+    .references(() => cart.id, { onDelete: "cascade" }),
+  productID: uuid("product_id")
+    .notNull()
+    .references(() => product.id),
+  quantity: integer("quantity").default(1).notNull(),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+});
+
+export const userRelations = relations(user, ({ one }) => ({
+  cart: one(cart), // Change 'many' to 'one'
+}));
+
+export const cartRelations = relations(cart, ({ one, many }) => ({
+  user: one(user, {
+    fields: [cart.userID],
+    references: [user.id],
+  }),
+  items: many(cartItem),
+}));
+
+export const productRelations = relations(product, ({ many }) => ({
+  cartItems: many(cartItem),
+}));
+
+export const cartItemRelations = relations(cartItem, ({ one }) => ({
+  cart: one(cart, {
+    fields: [cartItem.cartID],
+    references: [cart.id],
+  }),
+  product: one(product, {
+    fields: [cartItem.productID],
+    references: [product.id],
+  }),
+}));
 
 // status for order
 export const orderStatusEnum = pgEnum("order_status", [
