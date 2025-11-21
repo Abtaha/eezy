@@ -90,38 +90,33 @@ export const product = pgTable("product", {
 
 export const cart = pgTable("cart", {
   id: serial("id").primaryKey(),
-  userID: text("user_id").notNull().references(() => user.id, { onDelete: "cascade"}),
+  userID: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 export const cartItem = pgTable("cart_item", {
   id: serial("id").primaryKey(),
-  cartID: integer("cart_id").notNull().references(() => cart.id, { onDelete:"cascade"}),
-  productID: uuid("product_id").notNull().references(() => product.id),
+  cartID: integer("cart_id")
+    .notNull()
+    .references(() => cart.id, { onDelete: "cascade" }),
+  productID: uuid("product_id")
+    .notNull()
+    .references(() => product.id),
   quantity: integer("quantity").default(1).notNull(),
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
 
-/* User - Cart Relation
-Drizzle uses many because the cart table holds the userID as foreign key,
-but app will create only one active cart per user.
-*/
-export const userRelations = relations(user, ({ many }) => ({
-  carts: many(cart),
+export const userRelations = relations(user, ({ one }) => ({
+  cart: one(cart), // Change 'many' to 'one'
 }));
 
-/* Product - CartItem Relation
-Product can appear in many cart items
-*/
-export const productRelations = relations(product, ({ many }) => ({
-  cartItems: many(cartItem),
-}));
-
-/* Cart - User - CartItem Relation
-Each cart belongs to one user
-Each cart can have multiple items
-*/
 export const cartRelations = relations(cart, ({ one, many }) => ({
   user: one(user, {
     fields: [cart.userID],
@@ -130,10 +125,10 @@ export const cartRelations = relations(cart, ({ one, many }) => ({
   items: many(cartItem),
 }));
 
-/* CartItem - Cart - Product Relation
-Each item belongs to one cart
-Each item references one product
-*/
+export const productRelations = relations(product, ({ many }) => ({
+  cartItems: many(cartItem),
+}));
+
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
   cart: one(cart, {
     fields: [cartItem.cartID],
@@ -144,3 +139,4 @@ export const cartItemRelations = relations(cartItem, ({ one }) => ({
     references: [product.id],
   }),
 }));
+
