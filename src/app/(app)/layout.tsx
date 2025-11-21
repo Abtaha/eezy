@@ -23,15 +23,14 @@ export default function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className={geist.variable}>
-      <Header />
-      <main className="grow">
-        <CartProvider>
+    <CartProvider>
+      <div className={geist.variable}>
+        <Header />
+        <main className="grow">
           <TRPCReactProvider>{children}</TRPCReactProvider>
-        </CartProvider>
-      </main>
-      <Footer />
-    </div>
+        </main>
+        <Footer />
+      </div>
+    </CartProvider>
   );
 }
-
