@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, integer, serial, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, uuid, integer, serial, numeric, pgEnum } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -72,5 +72,51 @@ export const product = pgTable("product", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
+
+// status for order
+export const orderStatusEnum = pgEnum("order_status", [
+  "processing",
+  "in_transit",
+  "delivered",
+]);
+
+// order table
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  status: orderStatusEnum("status").notNull(),
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .$onUpdate(() => new Date())
+    .notNull(),
+
+  shippingAddress: text("shipping_address"),
+  paymentMethod: text("payment_method"),
+  trackingNumber: text("tracking_number"),
+});
+
+// items table
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+
+  quantity: integer("quantity").notNull(),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .$onUpdate(() => new Date())
     .notNull(),
 });
