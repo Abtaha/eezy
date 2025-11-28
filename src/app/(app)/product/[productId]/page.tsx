@@ -5,21 +5,8 @@ import ProductRating from "@/components/product-rating";
 import CommentSection from "@/components/comment-section";
 import { use, useState } from "react";
 import { useCart } from "@/context/cart-context";
-
-// Dummy product data
-const DUMMY_PRODUCT = {
-  id: "1",
-  imageFront:
-    "https://placehold.co/400x400/fce7f3/ec4899?text=Pink+Hoodie+Front",
-  imageBack: "https://placehold.co/400x400/fbcfe8/db2777?text=Pink+Hoodie+Back",
-  name: "Cozy Pink Hoodie",
-  category: "Hoodies & Sweatshirts",
-  price: 49.99,
-  rating: 5,
-  description:
-    "The perfect cozy hoodie for duck-loving students! Super soft fleece material, kangaroo pocket for storing snacks, and comes in the cutest shade of pink. Perfect for those late-night coding sessions or campus walks.",
-  stock: 15,
-};
+import { Loader2 } from "lucide-react";
+import { api } from "@/trpc/react";
 
 // Dummy related products
 const RELATED_PRODUCTS = [
@@ -95,7 +82,23 @@ export default function ProductPage({
 }) {
   const { addItem } = useCart();
   const { productId } = use(params);
+
+  const { data: product, isLoading } = api.product.get.useQuery({
+    id: productId,
+  });
   const [currentImage, setCurrentImage] = useState<"front" | "back">("front");
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return <div>Product not found</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -110,10 +113,10 @@ export default function ProductPage({
                 <img
                   src={
                     currentImage === "front"
-                      ? DUMMY_PRODUCT.imageFront
-                      : DUMMY_PRODUCT.imageBack
+                      ? product.frontImage
+                      : product.backImage
                   }
-                  alt={DUMMY_PRODUCT.name}
+                  alt={product.name}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -129,7 +132,7 @@ export default function ProductPage({
                   }`}
                 >
                   <img
-                    src={DUMMY_PRODUCT.imageFront}
+                    src={product.frontImage}
                     alt="Front view"
                     className="h-full w-full object-cover"
                   />
@@ -144,7 +147,7 @@ export default function ProductPage({
                   }`}
                 >
                   <img
-                    src={DUMMY_PRODUCT.imageBack}
+                    src={product.backImage}
                     alt="Back view"
                     className="h-full w-full object-cover"
                   />
@@ -156,9 +159,9 @@ export default function ProductPage({
             <div className="flex flex-col">
               {/* Product Name & Category */}
               <h1 className="mb-2 text-3xl font-bold text-gray-900">
-                {DUMMY_PRODUCT.name}
+                {product.name}
               </h1>
-              <p className="mb-4 text-gray-600">{DUMMY_PRODUCT.category}</p>
+              <p className="mb-4 text-gray-600">{product.category}</p>
 
               {/* Rating Display */}
               <div className="mb-4 flex items-center gap-2">
@@ -166,31 +169,25 @@ export default function ProductPage({
                   {[...Array(5)].map((_, i) => (
                     <span
                       key={i}
-                      className={
-                        i < DUMMY_PRODUCT.rating
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }
+                      className={i < 5 ? "text-yellow-400" : "text-gray-300"}
                     >
                       ★
                     </span>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">
-                  ({DUMMY_PRODUCT.rating} stars)
-                </span>
+                <span className="text-sm text-gray-600">({5} stars)</span>
               </div>
 
               {/* Price */}
               <p className="mb-6 text-4xl font-bold text-gray-900">
-                ${DUMMY_PRODUCT.price.toFixed(2)}
+                ${parseFloat(product.price).toFixed(2)}
               </p>
 
               {/* Description */}
               <div className="mb-6">
                 <h2 className="mb-2 text-lg font-semibold">Description</h2>
                 <p className="leading-relaxed text-gray-700">
-                  {DUMMY_PRODUCT.description}
+                  {product.description}
                 </p>
               </div>
 
@@ -199,9 +196,9 @@ export default function ProductPage({
                 <p className="text-sm text-gray-600">
                   Stock:{" "}
                   <span
-                    className={`font-semibold ${DUMMY_PRODUCT.stock > 5 ? "text-green-600" : "text-orange-600"}`}
+                    className={`font-semibold ${product.quantityInStock > 5 ? "text-green-600" : "text-orange-600"}`}
                   >
-                    {DUMMY_PRODUCT.stock} available
+                    {product.quantityInStock} available
                   </span>
                 </p>
               </div>
@@ -209,22 +206,22 @@ export default function ProductPage({
               {/* Add to Cart Button - TODO: Connect to CartContext */}
               <button
                 className={`w-full rounded-lg px-6 py-3 font-semibold transition-colors ${
-                  DUMMY_PRODUCT.stock > 0
+                  product.quantityInStock > 0
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "cursor-not-allowed bg-gray-300 text-gray-500"
                 }`}
-                disabled={DUMMY_PRODUCT.stock === 0}
+                disabled={product.quantityInStock === 0}
                 onClick={() => {
                   addItem({
                     id: productId,
-                    name: DUMMY_PRODUCT.name,
-                    price: DUMMY_PRODUCT.price,
+                    name: product.name,
+                    price: parseFloat(product.price),
                     quantity: 1,
                   });
                   console.log("Added to cart");
                 }}
               >
-                {DUMMY_PRODUCT.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                {product.quantityInStock > 0 ? "Add to Cart" : "Out of Stock"}
               </button>
             </div>
           </div>
@@ -254,4 +251,3 @@ export default function ProductPage({
     </div>
   );
 }
-
