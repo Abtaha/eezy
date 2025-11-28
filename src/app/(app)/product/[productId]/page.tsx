@@ -7,6 +7,7 @@ import { use, useState } from "react";
 import { useCart } from "@/context/cart-context";
 import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
+import { notFound } from "next/navigation";
 
 // Dummy related products
 const RELATED_PRODUCTS = [
@@ -80,13 +81,34 @@ export default function ProductPage({
 }: {
   params: Promise<{ productId: string }>;
 }) {
-  const { addItem } = useCart();
   const { productId } = use(params);
-
-  const { data: product, isLoading } = api.product.get.useQuery({
-    id: productId,
-  });
+  const { addItem } = useCart();
   const [currentImage, setCurrentImage] = useState<"front" | "back">("front");
+
+  const {
+    data: product,
+    isLoading,
+    isError,
+    error,
+  } = api.product.get.useQuery(
+    { id: productId ?? "" },
+    {
+      enabled: !!productId,
+      retry: false,
+    },
+  );
+
+  if (!productId || typeof productId !== "string") {
+    notFound();
+  }
+
+  if (isError || error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        Product not found or failed to load.
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -97,7 +119,11 @@ export default function ProductPage({
   }
 
   if (!product) {
-    return <div>Product not found</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-gray-500">
+        Product not found
+      </div>
+    );
   }
 
   return (
