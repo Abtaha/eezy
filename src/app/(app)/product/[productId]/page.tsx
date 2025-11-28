@@ -8,37 +8,7 @@ import { useCart } from "@/context/cart-context";
 import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { notFound } from "next/navigation";
-
-// Dummy related products
-const RELATED_PRODUCTS = [
-  {
-    imageFront: "https://placehold.co/400x400/dbeafe/3b82f6?text=Blue+Tee",
-    imageBack: "https://placehold.co/400x400/bfdbfe/2563eb?text=Blue+Tee+Back",
-    name: "Classic Blue T-Shirt",
-    category: "T-Shirts",
-    price: 24.99,
-    rating: 4,
-  },
-  {
-    imageFront: "https://placehold.co/400x400/dcfce7/10b981?text=Green+Jacket",
-    imageBack:
-      "https://placehold.co/400x400/bbf7d0/059669?text=Green+Jacket+Back",
-    name: "Wind Breaker Jacket",
-    category: "Jackets",
-    price: 89.99,
-    rating: 5,
-  },
-  {
-    imageFront:
-      "https://placehold.co/400x400/fef3c7/f59e0b?text=Yellow+Sweater",
-    imageBack:
-      "https://placehold.co/400x400/fde68a/d97706?text=Yellow+Sweater+Back",
-    name: "Duckling Yellow Sweater",
-    category: "Sweaters",
-    price: 39.99,
-    rating: 4,
-  },
-];
+import { authClient } from "@/lib/auth-client";
 
 // Dummy comments
 const DUMMY_COMMENTS = [
@@ -81,6 +51,7 @@ export default function ProductPage({
 }: {
   params: Promise<{ productId: string }>;
 }) {
+  const { data: session } = authClient.useSession();
   const { productId } = use(params);
   const { addItem } = useCart();
   const [currentImage, setCurrentImage] = useState<"front" | "back">("front");
@@ -92,6 +63,23 @@ export default function ProductPage({
     error,
   } = api.product.get.useQuery(
     { id: productId ?? "" },
+    {
+      enabled: !!productId,
+      retry: false,
+    },
+  );
+
+  const {
+    data: relatedProducts,
+    isLoading: isRelatedLoading,
+    isError: isRelatedError,
+    error: relatedError,
+  } = api.product.getRelated.useQuery(
+    {
+      id: productId ?? "",
+      limit: 3,
+      category: product?.category ?? "",
+    },
     {
       enabled: !!productId,
       retry: false,
@@ -254,10 +242,7 @@ export default function ProductPage({
         </div>
 
         {/* Rating Component - Only shown when logged in */}
-        <ProductRating
-          productId={productId}
-          isLoggedIn={true} // TODO: Connect to actual auth later - set to true for testing
-        />
+        <ProductRating productId={productId} isLoggedIn={!!session} />
 
         {/* Comments Section */}
         <CommentSection comments={DUMMY_COMMENTS} />
@@ -267,11 +252,37 @@ export default function ProductPage({
           <h2 className="mb-6 text-2xl font-bold text-gray-900">
             Related Products
           </h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {RELATED_PRODUCTS.map((product, index) => (
-              <ProductCard key={index} {...product} />
-            ))}
-          </div>
+
+          {isRelatedLoading ? (
+            <div className="flex w-full items-center justify-center py-6">
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            </div>
+          ) : isRelatedError ? (
+            <div className="flex items-center justify-center py-6">
+              Product not found or failed to load.
+            </div>
+          ) : relatedProducts?.length === 0 ? (
+            <div className="flex items-center justify-center py-6 text-gray-500">
+              No related products found.
+            </div>
+          ) : (
+            relatedProducts && (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {relatedProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    imageFront={product.frontImage}
+                    imageBack={product.backImage}
+                    name={product.name}
+                    category={product.category}
+                    price={parseFloat(product.price)}
+                    rating={4}
+                  />
+                ))}
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
