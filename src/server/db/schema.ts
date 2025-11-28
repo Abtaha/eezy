@@ -76,6 +76,7 @@ export const product = pgTable("product", {
   id: uuid("id").primaryKey(),
   name: text("name").notNull(),
   model: text("model").notNull(),
+  category: text("category").notNull(),
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
