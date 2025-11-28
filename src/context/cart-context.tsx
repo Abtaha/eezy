@@ -5,8 +5,12 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
+import { api } from "@/trpc/react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export interface CartItem {
   id: string;
@@ -27,48 +31,161 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const { data: session, isPending } = authClient.useSession();
+  const isAuthenticated = !!session && !isPending;
+  const isGuest = !session && !isPending;
+
+  const hasMerged = useRef(false);
+
   const [cart, setCart] = useState<CartItem[]>([]);
+  const utils = api.useUtils();
+
+  const { data: serverCart } = api.cart.getCart.useQuery(undefined, {
+    enabled: isAuthenticated,
+    refetchOnWindowFocus: false,
+  });
+
+  const addItemMutation = api.cart.addItem.useMutation({
+    onSuccess: () => {
+      utils.cart.getCart.invalidate();
+      toast.success("Item added to cart");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
+  const removeItemMutation = api.cart.removeItem.useMutation({
+    onSuccess: () => utils.cart.getCart.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const clearCartMutation = api.cart.clearCart.useMutation({
+    onSuccess: () => utils.cart.getCart.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const mergeCartMutation = api.cart.mergeCart.useMutation({
+    onSuccess: () => {
+      localStorage.removeItem("eezy-cart");
+      utils.cart.getCart.invalidate();
+      toast.success("Cart merged successfully");
+    },
+    onError: (err) => toast.error("Failed to merge cart: " + err.message),
+  });
 
   useEffect(() => {
-    const stored = localStorage.getItem("eezy-cart");
-    if (stored) setCart(JSON.parse(stored));
-  }, []);
+    if (isGuest) {
+      const stored = localStorage.getItem("eezy-cart");
+      if (stored) setCart(JSON.parse(stored));
+    }
+  }, [isGuest]);
 
   useEffect(() => {
-    localStorage.setItem("eezy-cart", JSON.stringify(cart));
-  }, [cart]);
+    if (isAuthenticated && serverCart) {
+      const mappedItems: CartItem[] = serverCart.items.map((item) => ({
+        id: item.productID,
+        name: item.product.name,
+        price: Number(item.product.price),
+        quantity: item.quantity,
+      }));
+
+      setCart((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(mappedItems)) {
+          return mappedItems;
+        }
+        return prev;
+      });
+    }
+  }, [serverCart, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && !hasMerged.current) {
+      const stored = localStorage.getItem("eezy-cart");
+
+      if (stored) {
+        const localItems: CartItem[] = JSON.parse(stored);
+
+        if (localItems.length > 0) {
+          hasMerged.current = true;
+          localStorage.removeItem("eezy-cart");
+
+          mergeCartMutation.mutate(
+            localItems.map((i) => ({ id: i.id, quantity: i.quantity })),
+            {
+              onError: () => {
+                localStorage.setItem("eezy-cart", stored);
+                toast.error("Failed to merge cart. Please try again.");
+              },
+            },
+          );
+        }
+      }
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isGuest) {
+      localStorage.setItem("eezy-cart", JSON.stringify(cart));
+    }
+  }, [cart, isGuest]);
 
   const addItem = (item: CartItem) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i,
-        );
-      }
-      return [...prev, item];
-    });
+    if (isAuthenticated) {
+      addItemMutation.mutate({ productId: item.id, quantity: item.quantity });
+    } else {
+      setCart((prev) => {
+        const existing = prev.find((i) => i.id === item.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.id === item.id
+              ? { ...i, quantity: i.quantity + item.quantity }
+              : i,
+          );
+        }
+        return [...prev, item];
+      });
+      toast.success("Item added to cart");
+    }
   };
 
   const removeItem = (id: string) => {
-    setCart((prev) => prev.filter((i) => i.id !== id));
+    if (isAuthenticated) {
+      removeItemMutation.mutate({ productId: id });
+    } else {
+      setCart((prev) => prev.filter((i) => i.id !== id));
+    }
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    if (isAuthenticated) {
+      clearCartMutation.mutate();
+    } else {
+      setCart([]);
+      localStorage.removeItem("eezy-cart");
+    }
+  };
 
   const mergeCart = (items: CartItem[]) => {
-    setCart((prev) => {
-      const merged = [...prev];
-      items.forEach((item) => {
-        const existing = merged.find((i) => i.id === item.id);
-        if (existing) {
-          existing.quantity += item.quantity;
-        } else {
-          merged.push(item);
-        }
+    if (isAuthenticated) {
+      mergeCartMutation.mutate(
+        items.map((i) => ({ id: i.id, quantity: i.quantity })),
+      );
+    } else {
+      setCart((prev) => {
+        const merged = [...prev];
+        items.forEach((item) => {
+          const existing = merged.find((i) => i.id === item.id);
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            merged.push(item);
+          }
+        });
+        return merged;
       });
-      return merged;
-    });
+      toast.success("Carts merged");
+    }
   };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
