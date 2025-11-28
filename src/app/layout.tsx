@@ -6,6 +6,8 @@ import { Geist } from "next/font/google";
 import { CartProvider } from "@/context/cart-context";
 import { TRPCReactProvider } from "@/trpc/react";
 
+import { Toaster } from "sonner";
+
 export const metadata: Metadata = {
   title: "Eezy",
   description: "Eezy Shopping Store",
@@ -25,6 +27,7 @@ export default function RootLayout({
       <body>
         <TRPCReactProvider>
           <CartProvider>{children}</CartProvider>
+          <Toaster />
         </TRPCReactProvider>
       </body>
     </html>
