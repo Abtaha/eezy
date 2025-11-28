@@ -5,10 +5,12 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 import { api } from "@/trpc/react";
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export interface CartItem {
   id: string;
@@ -33,6 +35,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const isAuthenticated = !!session && !isPending;
   const isGuest = !session && !isPending;
 
+  const hasMerged = useRef(false);
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const utils = api.useUtils();
 
@@ -42,22 +46,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const addItemMutation = api.cart.addItem.useMutation({
-    onSuccess: () => utils.cart.getCart.invalidate(),
+    onSuccess: () => {
+      utils.cart.getCart.invalidate();
+      toast.success("Item added to cart");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 
   const removeItemMutation = api.cart.removeItem.useMutation({
     onSuccess: () => utils.cart.getCart.invalidate(),
+    onError: (err) => toast.error(err.message),
   });
 
   const clearCartMutation = api.cart.clearCart.useMutation({
     onSuccess: () => utils.cart.getCart.invalidate(),
+    onError: (err) => toast.error(err.message),
   });
 
   const mergeCartMutation = api.cart.mergeCart.useMutation({
     onSuccess: () => {
       localStorage.removeItem("eezy-cart");
       utils.cart.getCart.invalidate();
+      toast.success("Cart merged successfully");
     },
+    onError: (err) => toast.error("Failed to merge cart: " + err.message),
   });
 
   useEffect(() => {
@@ -75,18 +89,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         price: Number(item.product.price),
         quantity: item.quantity,
       }));
-      setCart(mappedItems);
+
+      setCart((prev) => {
+        if (JSON.stringify(prev) !== JSON.stringify(mappedItems)) {
+          return mappedItems;
+        }
+        return prev;
+      });
     }
   }, [serverCart, isAuthenticated]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasMerged.current) {
       const stored = localStorage.getItem("eezy-cart");
+
       if (stored) {
         const localItems: CartItem[] = JSON.parse(stored);
+
         if (localItems.length > 0) {
+          hasMerged.current = true;
+          localStorage.removeItem("eezy-cart");
+
           mergeCartMutation.mutate(
             localItems.map((i) => ({ id: i.id, quantity: i.quantity })),
+            {
+              onError: () => {
+                localStorage.setItem("eezy-cart", stored);
+                toast.error("Failed to merge cart. Please try again.");
+              },
+            },
           );
         }
       }
@@ -114,6 +145,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         return [...prev, item];
       });
+      toast.success("Item added to cart");
     }
   };
 
@@ -152,6 +184,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         });
         return merged;
       });
+      toast.success("Carts merged");
     }
   };
 
