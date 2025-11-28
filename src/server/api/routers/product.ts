@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { product } from "@/server/db/schema";
-import { eq } from "drizzle-orm/sql/expressions/conditions";
+import { and, ne, eq } from "drizzle-orm/sql/expressions/conditions";
 import { randomUUID } from "crypto";
 import { ilike } from "drizzle-orm";
 
@@ -93,5 +93,25 @@ export const productRouter = createTRPCRouter({
         where: ilike(product.description, `%${input.querystring}%`), //case-insensitive search for products with descriptions matching the query string
       });
       return searchByName.concat(searchByDescription); //return combined array of products found first by name and then by description
+    }),
+
+  getRelated: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        limit: z.number().int().min(1),
+        category: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const relatedProducts = await ctx.db.query.product.findMany({
+        where: and(
+          eq(product.category, input.category),
+          ne(product.id, input.id),
+        ),
+        limit: input.limit,
+      });
+
+      return relatedProducts;
     }),
 });
