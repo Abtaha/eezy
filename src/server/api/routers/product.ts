@@ -56,6 +56,7 @@ export const productRouter = createTRPCRouter({
         productModel: z.string(),
         productDescription: z.string().optional() ?? "", //empty string if no description provided
         productQuantityInStock: z.number().int().nonnegative(), //ensure non-negative integer for stock quantity
+        productCategory: z.string(),
         productPrice: z.number().int().max(9999999999), // to ensure a maximum of 10 digits as in the product schema
         productWarrantyStatus: z.boolean(),
         productFrontImage: z.string(),
@@ -70,6 +71,7 @@ export const productRouter = createTRPCRouter({
           name: input.productName,
           model: input.productModel,
           description: input.productDescription,
+          category: input.productCategory,
           quantityInStock: input.productQuantityInStock,
           price: (input.productPrice * 0.01).toFixed(2), //convert to string in 2-digits-after-decimal format
           warrantyStatus: input.productWarrantyStatus,
@@ -93,4 +95,3 @@ export const productRouter = createTRPCRouter({
       return searchByName.concat(searchByDescription); //return combined array of products found first by name and then by description
     }),
 });
-
