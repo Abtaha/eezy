@@ -84,13 +84,27 @@ export const productRouter = createTRPCRouter({
   search: publicProcedure
     .input(z.object({ querystring: z.string() }))
     .query(async ({ ctx, input }) => {
+      const q = `%${input.querystring}%`;
+
+      // search by name
       const searchByName = await ctx.db.query.product.findMany({
-        where: ilike(product.name, `%${input.querystring}%`), //case-insensitive search for products with names matching the query string
+        where: ilike(product.name, q),
       });
+
+      // search by description
       const searchByDescription = await ctx.db.query.product.findMany({
-        where: ilike(product.description, `%${input.querystring}%`), //case-insensitive search for products with descriptions matching the query string
+        where: ilike(product.description, q),
       });
-      return searchByName.concat(searchByDescription); //return combined array of products found first by name and then by description
+
+      // remove duplicates using a Map keyed by product.id
+      const uniqueMap = new Map<string, (typeof searchByName)[number]>();
+
+      [...searchByName, ...searchByDescription].forEach((item) => {
+        uniqueMap.set(item.id, item); // if same id appears twice → overwrites → unique
+      });
+
+      return Array.from(uniqueMap.values()); // array of unique results
     }),
+
 });
 
