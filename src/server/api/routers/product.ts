@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { product } from "@/server/db/schema";
-import { eq } from "drizzle-orm/sql/expressions/conditions";
+import { and, ne, eq } from "drizzle-orm/sql/expressions/conditions";
 import { randomUUID } from "crypto";
 import { ilike } from "drizzle-orm";
 
@@ -56,6 +56,7 @@ export const productRouter = createTRPCRouter({
         productModel: z.string(),
         productDescription: z.string().optional() ?? "", //empty string if no description provided
         productQuantityInStock: z.number().int().nonnegative(), //ensure non-negative integer for stock quantity
+        productCategory: z.string(),
         productPrice: z.number().int().max(9999999999), // to ensure a maximum of 10 digits as in the product schema
         productWarrantyStatus: z.boolean(),
         productFrontImage: z.string(),
@@ -70,6 +71,7 @@ export const productRouter = createTRPCRouter({
           name: input.productName,
           model: input.productModel,
           description: input.productDescription,
+          category: input.productCategory,
           quantityInStock: input.productQuantityInStock,
           price: (input.productPrice * 0.01).toFixed(2), //convert to string in 2-digits-after-decimal format
           warrantyStatus: input.productWarrantyStatus,
@@ -106,5 +108,23 @@ export const productRouter = createTRPCRouter({
       return Array.from(uniqueMap.values()); // array of unique results
     }),
 
-});
+  getRelated: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        limit: z.number().int().min(1),
+        category: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const relatedProducts = await ctx.db.query.product.findMany({
+        where: and(
+          eq(product.category, input.category),
+          ne(product.id, input.id),
+        ),
+        limit: input.limit,
+      });
 
+      return relatedProducts;
+    }),
+});
