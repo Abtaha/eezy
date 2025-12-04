@@ -1,9 +1,11 @@
-"use client"
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 interface ProductCardProps {
+  id: string;
   imageFront: string;
   imageBack: string;
   name: string;
@@ -12,47 +14,52 @@ interface ProductCardProps {
   rating: number;
 }
 
-export default function ProductCard({ imageFront, imageBack, name, category, price, rating }: ProductCardProps) {
+export default function ProductCard({
+  id,
+  imageFront,
+  imageBack,
+  name,
+  category,
+  price,
+  rating,
+}: ProductCardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 max-w-sm hover:shadow-xl transition-shadow duration-300">
-      {/* hover effect */}
-      <div 
-        className="relative w-full h-64 mb-4 overflow-hidden rounded-md"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <Image
-          src={isHovered ? imageBack : imageFront}
-          alt={name}
-          fill
-          className="object-cover"
-        />
-      </div>
-      
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">
-        {name}
-      </h3>
-      
-      <p className="text-sm text-gray-600 mb-2">
-        {category}
-      </p>
+    <Link href={`/product/${id}`}>
+      <div className="max-w-sm cursor-pointer rounded-lg bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-xl">
+        {/* hover effect */}
+        <div
+          className="relative mb-4 h-64 w-full overflow-hidden rounded-md"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <Image
+            src={isHovered ? imageBack : imageFront}
+            alt={name}
+            fill
+            className="object-cover"
+          />
+        </div>
 
-      <p className="text-xl font-bold text-gray-900 mb-2">
-        ${price.toFixed(2)}
-      </p>
+        <h3 className="mb-2 text-lg font-semibold text-gray-800">{name}</h3>
 
-      <div className="flex items-center">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <span key={index} className="text-yellow-400">
-            {index < rating ? '★' : '☆'}
-          </span>
-        ))}
-        <span className="ml-2 text-sm text-gray-600">
-          ({rating}/5)
-        </span>
+        <p className="mb-2 text-sm text-gray-600">{category}</p>
+
+        <p className="mb-2 text-xl font-bold text-gray-900">
+          ${price.toFixed(2)}
+        </p>
+
+        <div className="flex items-center">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <span key={index} className="text-yellow-400">
+              {index < rating ? "★" : "☆"}
+            </span>
+          ))}
+          <span className="ml-2 text-sm text-gray-600">({rating}/5)</span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
+
