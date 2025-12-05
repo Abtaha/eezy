@@ -20,7 +20,7 @@ export const orderRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        items: z.array(orderItem).nonempty(), // non-empty items array
+        items: z.array(orderItem).min(1), // non-empty items array
         shippingAddress: z.string(),
         paymentMethod: z.string(),
       }),
