@@ -49,8 +49,11 @@ export const CartComponent = () => {
             </span>
           </div>
 
-          <Button className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800">
-            Proceed to Checkout
+          <Button 
+            onClick={() => window.location.href = '/checkout'}
+            className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800"
+          >
+            Proceed to the checkout page ^^
           </Button>
         </div>
       )}
