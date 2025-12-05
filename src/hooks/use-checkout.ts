@@ -3,12 +3,22 @@
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { useCart } from "@/context/cart-context";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 export function useCheckout() {
   const { cart, clearCart } = useCart();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
   const createOrderMutation = api.order.create.useMutation();
 
   const handleCheckout = async () => {
+    if (!session && !isPending) {
+      router.push("/login");
+      return;
+    }
+
     const items = cart.map((item) => ({
       productId: item.id,
       quantity: item.quantity,
@@ -30,5 +40,8 @@ export function useCheckout() {
     }
   };
 
-  return { handleCheckout, isLoading: createOrderMutation.isPending };
+  return {
+    handleCheckout,
+    isLoading: createOrderMutation.isPending || isPending,
+  };
 }
