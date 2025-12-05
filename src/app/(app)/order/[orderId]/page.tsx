@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/trpc/server";
+import { TRPCClientError } from "@trpc/client";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -25,10 +26,11 @@ type PageProps = {
 export default async function OrderDetailPage({ params }: PageProps) {
   const { orderId } = await params;
 
-  // const order = dummyOrders.find((o) => o.id === orderId);
-  const order = await api.order.getById({ orderId });
+  let order;
 
-  if (!order) {
+  try {
+    order = await api.order.getById({ orderId });
+  } catch (err) {
     notFound();
   }
 
