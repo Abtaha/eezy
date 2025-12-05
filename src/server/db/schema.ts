@@ -152,6 +152,7 @@ export const ratings = pgTable("ratings", {
 
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart),
+  orders: many(orders),
   comments: many(comments),
   ratings: many(ratings),
 }));
@@ -166,6 +167,7 @@ export const cartRelations = relations(cart, ({ one, many }) => ({
 
 export const productRelations = relations(product, ({ many }) => ({
   cartItems: many(cartItem),
+  orderItems: many(orderItems),
   comments: many(comments),
   ratings: many(ratings),
 }));
@@ -228,7 +230,15 @@ export const orderItems = pgTable("order_items", {
     .notNull(),
 });
 
-export const orderItemRelations = relations(orderItems, ({ one }) => ({
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(user, {
+    fields: [orders.userId],
+    references: [user.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],

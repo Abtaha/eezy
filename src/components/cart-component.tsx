@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 import { useCart } from "@/context/cart-context";
+import { useCheckout } from "@/hooks/use-checkout";
 
 export const CartComponent = () => {
   const { cart, removeItem, total } = useCart();
+  const { handleCheckout, isLoading } = useCheckout();
 
   return (
     <div className="mx-auto mt-10 max-w-2xl rounded-xl border p-6 shadow-md">
@@ -49,7 +51,11 @@ export const CartComponent = () => {
             </span>
           </div>
 
-          <Button className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800">
+          <Button
+            className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800"
+            onClick={() => handleCheckout()}
+            disabled={isLoading}
+          >
             Proceed to Checkout
           </Button>
         </div>

@@ -7,8 +7,7 @@ import { orders, orderItems, product } from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-//Delivery processing function stub
-async function processDelivery(orderId: string) {}
+import { processDelivery } from "@/server/services/send-invoice";
 
 // single order item
 const orderItem = z.object({
@@ -20,7 +19,7 @@ export const orderRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        items: z.array(orderItem).nonempty(), // non-empty items array
+        items: z.array(orderItem).min(1), // non-empty items array
         shippingAddress: z.string(),
         paymentMethod: z.string(),
       }),
@@ -126,7 +125,6 @@ export const orderRouter = createTRPCRouter({
         };
       });
 
-      // process delivery (stub)
       await processDelivery(transaction.orderId);
 
       return transaction;
