@@ -115,9 +115,46 @@ export const cartItem = pgTable("cart_item", {
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
 
+// comments table
+export const comments = pgTable("comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+  comment: text("comment").notNull(),
+  approved: boolean("approved").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// ratings table
+export const ratings = pgTable("ratings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // Rating out of 5
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const userRelations = relations(user, ({ one, many }) => ({
-  cart: one(cart), // Change 'many' to 'one'
+  cart: one(cart),
   orders: many(orders),
+  comments: many(comments),
+  ratings: many(ratings),
 }));
 
 export const cartRelations = relations(cart, ({ one, many }) => ({
@@ -131,6 +168,8 @@ export const cartRelations = relations(cart, ({ one, many }) => ({
 export const productRelations = relations(product, ({ many }) => ({
   cartItems: many(cartItem),
   orderItems: many(orderItems),
+  comments: many(comments),
+  ratings: many(ratings),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
@@ -186,6 +225,7 @@ export const orderItems = pgTable("order_items", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
+    .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
@@ -205,6 +245,30 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   }),
   product: one(product, {
     fields: [orderItems.productId],
+    references: [product.id],
+  }),
+}));
+
+// relations for commets
+export const commentsRelations = relations(comments, ({ one }) => ({
+  user: one(user, {
+    fields: [comments.userId],
+    references: [user.id],
+  }),
+  product: one(product, {
+    fields: [comments.productId],
+    references: [product.id],
+  }),
+}));
+
+// relation for ratings
+export const ratingsRelations = relations(ratings, ({ one }) => ({
+  user: one(user, {
+    fields: [ratings.userId],
+    references: [user.id],
+  }),
+  product: one(product, {
+    fields: [ratings.productId],
     references: [product.id],
   }),
 }));
