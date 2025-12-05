@@ -24,7 +24,6 @@ class ResendService {
         subject,
         html,
       });
-      console.log("Email sent:", response);
       return response;
     } catch (error) {
       console.error("Failed to send email:", error);
@@ -60,7 +59,6 @@ class ResendService {
           contentType: file.contentType,
         })),
       });
-      console.log("Email with attachment sent:", response);
       return response;
     } catch (error) {
       console.error("Failed to send email with attachment:", error);
