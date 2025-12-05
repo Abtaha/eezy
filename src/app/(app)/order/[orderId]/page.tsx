@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import { dummyOrders, dummyOrderItems, dummyProducts } from "@/lib/order-dummyData";
 import Image from "next/image";
+import { api } from "@/trpc/server";
+import { TRPCClientError } from "@trpc/client";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -23,36 +24,24 @@ type PageProps = {
 };
 
 export default async function OrderDetailPage({ params }: PageProps) {
-
   const { orderId } = await params;
 
-  const order = dummyOrders.find((o) => o.id === orderId);
+  let order;
 
-  if (!order) {
+  try {
+    order = await api.order.getById({ orderId });
+  } catch (err) {
     notFound();
   }
 
-  // Join product and orderItems tables later to get product name and image from product table with id
-const items = dummyOrderItems
-  .filter((i) => i.orderId === orderId)
-  .map((item) => {
-    const p = dummyProducts.find((prod) => prod.id === item.productId);
-
-    return {
-      ...item,
-      productName: p?.name ?? "Unknown",
-      productImage: p?.frontImage ?? "",
-    };
-  });
-
   return (
-    <main className="mx-auto w-full max-w-3xl p-4 md:p-8 space-y-6 min-h-[130vh]">
+    <main className="mx-auto min-h-[130vh] w-full max-w-3xl space-y-6 p-4 md:p-8">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Order #{order.id}
+          Order #{order.orderId}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Placed on {formatDate(order.createdAt)} • Status:{" "}
+        <p className="text-muted-foreground text-sm">
+          Placed on {formatDate(order.createdAt.toString())} • Status:{" "}
           <span className="font-medium">{order.status.toUpperCase()}</span>
         </p>
       </header>
@@ -60,19 +49,21 @@ const items = dummyOrderItems
       {/* General info */}
       <section className="grid gap-4 rounded-lg border p-4 text-sm md:grid-cols-3">
         <div>
-          <p className="text-xs text-muted-foreground">Total</p>
-          <p className="font-medium">{formatCurrency(order.totalAmount)}</p>
+          <p className="text-muted-foreground text-xs">Total</p>
+          <p className="font-medium">
+            {formatCurrency(parseFloat(order.totalAmount))}
+          </p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Payment method</p>
+          <p className="text-muted-foreground text-xs">Payment method</p>
           <p>{order.paymentMethod ?? "-"}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Tracking number</p>
+          <p className="text-muted-foreground text-xs">Tracking number</p>
           <p>{order.trackingNumber ?? "-"}</p>
         </div>
         <div className="md:col-span-3">
-          <p className="text-xs text-muted-foreground">Shipping address</p>
+          <p className="text-muted-foreground text-xs">Shipping address</p>
           <p>{order.shippingAddress ?? "-"}</p>
         </div>
       </section>
@@ -91,7 +82,7 @@ const items = dummyOrderItems
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {order.orderItems.map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-3">
@@ -101,7 +92,7 @@ const items = dummyOrderItems
                           alt={item.productName}
                           width={48}
                           height={48}
-                          className="w-12 h-12 rounded-md object-cover"
+                          className="h-12 w-12 rounded-md object-cover"
                         />
                       )}
                       <p className="font-medium">{item.productName}</p>
@@ -109,10 +100,10 @@ const items = dummyOrderItems
                   </td>
                   <td className="px-4 py-2 text-right">{item.quantity}</td>
                   <td className="px-4 py-2 text-right">
-                    {formatCurrency(item.unitPrice)}
+                    {formatCurrency(parseFloat(item.unitPrice))}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {formatCurrency(item.subtotal)}
+                    {formatCurrency(parseFloat(item.subtotal))}
                   </td>
                 </tr>
               ))}
@@ -123,4 +114,3 @@ const items = dummyOrderItems
     </main>
   );
 }
-
