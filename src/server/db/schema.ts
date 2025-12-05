@@ -128,6 +128,7 @@ export const comments = pgTable("comments", {
   approved: boolean("approved").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
+    .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
@@ -144,6 +145,7 @@ export const ratings = pgTable("ratings", {
   rating: integer("rating").notNull(), // Rating out of 5
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
+    .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
@@ -221,6 +223,7 @@ export const orderItems = pgTable("order_items", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
+    .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
