@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/server/db";
 import { orders, orderItems, product } from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 //Delivery processing function stub
 async function processDelivery(orderId: string) {}
@@ -49,13 +50,17 @@ export const orderRouter = createTRPCRouter({
 
           //validate if product exists and is in stock
           if (!product) {
-            throw new Error(`Product ${item.productId} not found`);
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Product ${item.productId} not found`,
+            });
           }
 
           if (product.quantityInStock < item.quantity) {
-            throw new Error(
-              `This quantity of product ${product.name} is not in stock`,
-            );
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `This quantity of product ${product.name} is not in stock`,
+            });
           }
 
           // calculate total amount
@@ -78,7 +83,10 @@ export const orderRouter = createTRPCRouter({
           .returning();
 
         if (!createdOrder) {
-          throw new Error("Failed to create order");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create order",
+          });
         }
 
         // insert each order item into db
@@ -96,7 +104,10 @@ export const orderRouter = createTRPCRouter({
           });
 
           if (!p) {
-            throw new Error(`Product ${item.productId} not found`);
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Product ${item.productId} not found`,
+            });
           }
 
           // update product stock for each order item
@@ -135,6 +146,7 @@ export const orderRouter = createTRPCRouter({
           status: true,
           totalAmount: true,
           createdAt: true,
+          updatedAt: true,
         },
         orderBy: desc(orders.createdAt),
       });
@@ -161,18 +173,14 @@ export const orderRouter = createTRPCRouter({
       });
 
       if (!order) {
-        throw new Error("Order not found");
+        throw new TRPCError({ code: "NOT_FOUND" });
       }
 
       //find the order items by order ID
       const items = await ctx.db.query.orderItems.findMany({
         where: eq(orderItems.orderId, input.orderId),
-        columns: {
-          id: true,
-          productId: true,
-          quantity: true,
-          unitPrice: true,
-          subtotal: true,
+        with: {
+          product: true,
         },
       });
 
@@ -185,7 +193,15 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items,
+        orderItems: items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
       };
     }),
 });
