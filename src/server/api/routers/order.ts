@@ -135,6 +135,7 @@ export const orderRouter = createTRPCRouter({
           status: true,
           totalAmount: true,
           createdAt: true,
+          updatedAt: true,
         },
         orderBy: desc(orders.createdAt),
       });
@@ -167,12 +168,8 @@ export const orderRouter = createTRPCRouter({
       //find the order items by order ID
       const items = await ctx.db.query.orderItems.findMany({
         where: eq(orderItems.orderId, input.orderId),
-        columns: {
-          id: true,
-          productId: true,
-          quantity: true,
-          unitPrice: true,
-          subtotal: true,
+        with: {
+          product: true,
         },
       });
 
@@ -185,7 +182,15 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items,
+        orderItems: items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
       };
     }),
 });
