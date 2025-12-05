@@ -115,8 +115,9 @@ export const cartItem = pgTable("cart_item", {
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
 
-export const userRelations = relations(user, ({ one }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart), // Change 'many' to 'one'
+  orders: many(orders),
 }));
 
 export const cartRelations = relations(cart, ({ one, many }) => ({
@@ -129,6 +130,7 @@ export const cartRelations = relations(cart, ({ one, many }) => ({
 
 export const productRelations = relations(product, ({ many }) => ({
   cartItems: many(cartItem),
+  orderItems: many(orderItems),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
@@ -188,7 +190,15 @@ export const orderItems = pgTable("order_items", {
     .notNull(),
 });
 
-export const orderItemRelations = relations(orderItems, ({ one }) => ({
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(user, {
+    fields: [orders.userId],
+    references: [user.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],
