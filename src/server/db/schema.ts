@@ -8,6 +8,7 @@ import {
   serial,
   numeric,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 
 import { relations } from "drizzle-orm";
@@ -18,6 +19,7 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  role: text("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -25,52 +27,64 @@ export const user = pgTable("user", {
     .notNull(),
 });
 
-export const session = pgTable("session", {
-  id: text("id").primaryKey(),
-  expiresAt: timestamp("expires_at").notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
 
-export const account = pgTable("account", {
-  id: text("id").primaryKey(),
-  accountId: text("account_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  idToken: text("id_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at"),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
-  scope: text("scope"),
-  password: text("password"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
 
-export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
 
 export const product = pgTable("product", {
   id: uuid("id").primaryKey(),
@@ -115,32 +129,40 @@ export const cartItem = pgTable("cart_item", {
   addedAt: timestamp("added_at").defaultNow().notNull(),
 });
 
-export const userRelations = relations(user, ({ one }) => ({
-  cart: one(cart), // Change 'many' to 'one'
-}));
+// comments table
+export const comments = pgTable("comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+  comment: text("comment").notNull(),
+  approved: boolean("approved").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
-export const cartRelations = relations(cart, ({ one, many }) => ({
-  user: one(user, {
-    fields: [cart.userID],
-    references: [user.id],
-  }),
-  items: many(cartItem),
-}));
-
-export const productRelations = relations(product, ({ many }) => ({
-  cartItems: many(cartItem),
-}));
-
-export const cartItemRelations = relations(cartItem, ({ one }) => ({
-  cart: one(cart, {
-    fields: [cartItem.cartID],
-    references: [cart.id],
-  }),
-  product: one(product, {
-    fields: [cartItem.productID],
-    references: [product.id],
-  }),
-}));
+// ratings table
+export const ratings = pgTable("ratings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // Rating out of 5
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
 // status for order
 export const orderStatusEnum = pgEnum("order_status", [
@@ -184,6 +206,99 @@ export const orderItems = pgTable("order_items", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
+    .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export const userRelations = relations(user, ({ one, many }) => ({
+  cart: one(cart),
+  orders: many(orders),
+  comments: many(comments),
+  ratings: many(ratings),
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const cartRelations = relations(cart, ({ one, many }) => ({
+  user: one(user, {
+    fields: [cart.userID],
+    references: [user.id],
+  }),
+  items: many(cartItem),
+}));
+
+export const productRelations = relations(product, ({ many }) => ({
+  cartItems: many(cartItem),
+  orderItems: many(orderItems),
+  comments: many(comments),
+  ratings: many(ratings),
+}));
+
+export const cartItemRelations = relations(cartItem, ({ one }) => ({
+  cart: one(cart, {
+    fields: [cartItem.cartID],
+    references: [cart.id],
+  }),
+  product: one(product, {
+    fields: [cartItem.productID],
+    references: [product.id],
+  }),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(user, {
+    fields: [orders.userId],
+    references: [user.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(product, {
+    fields: [orderItems.productId],
+    references: [product.id],
+  }),
+}));
+
+// relations for commets
+export const commentsRelations = relations(comments, ({ one }) => ({
+  user: one(user, {
+    fields: [comments.userId],
+    references: [user.id],
+  }),
+  product: one(product, {
+    fields: [comments.productId],
+    references: [product.id],
+  }),
+}));
+
+// relation for ratings
+export const ratingsRelations = relations(ratings, ({ one }) => ({
+  user: one(user, {
+    fields: [ratings.userId],
+    references: [user.id],
+  }),
+  product: one(product, {
+    fields: [ratings.productId],
+    references: [product.id],
+  }),
+}));
