@@ -58,17 +58,11 @@ export const UserMenu = () => {
       onClick: () => router.push("/orders"),
     },
     {
-      icon: UserIcon,
-      property: "Profile",
-    },
-    {
-      icon: SettingsIcon,
-      property: "Settings",
-    },
-    {
       icon: LogOutIcon,
       property: "Sign Out",
-      onClick: () => authClient.signOut(),
+      onClick: () => {
+        (authClient.signOut(), router.push("/"));
+      },
     },
   ];
 
