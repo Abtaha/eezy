@@ -1,6 +1,10 @@
 // src/server/api/routers/order/order.router.ts
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  productManagerProcedure,
+} from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { orders, orderItems, product } from "@/server/db/schema";
@@ -128,6 +132,28 @@ export const orderRouter = createTRPCRouter({
       await processDelivery(transaction.orderId);
 
       return transaction;
+    }),
+
+  updateStatus: productManagerProcedure
+    .input(
+      z.object({
+        orderId: z.string().uuid(),
+        status: z.enum(["processing", "in_transit", "delivered"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await ctx.db
+        .update(orders)
+        .set({ status: input.status })
+        .where(eq(orders.id, input.orderId));
     }),
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
