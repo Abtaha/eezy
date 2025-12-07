@@ -19,10 +19,13 @@ import {
   BellIcon,
   LogOutIcon,
   CreditCardIcon,
+  ReceiptText,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export const UserMenu = () => {
   const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
 
   if (isPending) {
     return;
@@ -50,17 +53,16 @@ export const UserMenu = () => {
 
   const listItems = [
     {
-      icon: UserIcon,
-      property: "Profile",
-    },
-    {
-      icon: SettingsIcon,
-      property: "Settings",
+      icon: ReceiptText,
+      property: "Order History",
+      onClick: () => router.push("/orders"),
     },
     {
       icon: LogOutIcon,
       property: "Sign Out",
-      onClick: () => authClient.signOut(),
+      onClick: () => {
+        (authClient.signOut(), router.push("/"));
+      },
     },
   ];
 

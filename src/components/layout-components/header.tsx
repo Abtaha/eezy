@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
-import { Search } from "lucide-react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart, ShoppingBag } from "lucide-react";
 
 import {
   Sheet,
@@ -16,6 +13,7 @@ import {
 import { CartComponent } from "@/components/cart-component";
 
 import { UserMenu } from "@/components/layout-components/user-menu";
+import { HeaderSearch } from "@/components/layout-components/header-search";
 
 type DropdownMenuProps = {
   title: string;
@@ -69,8 +67,6 @@ const DropdownMenu = ({ title, href, items }: DropdownMenuProps) => (
 );
 
 export const Header = () => {
-  const [searchOpen, setSearchOpen] = useState(false);
-
   return (
     <header className="sticky top-0 z-50 bg-white shadow">
       {/* Logo and Brand Name */}
@@ -130,18 +126,8 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Search Bar */}
-          <div className="group relative flex items-center">
-            <input
-              type="text"
-              placeholder="Search..."
-              className={`absolute right-8 rounded-full border border-gray-300 bg-white px-3 py-1 text-sm transition-all duration-300 ease-in-out focus:ring-2 focus:ring-blue-500 focus:outline-none ${searchOpen ? "visible w-48 opacity-100" : "invisible w-0 opacity-0"}`}
-            />
-            <Search
-              className="h-6 w-6 cursor-pointer hover:text-blue-600"
-              onClick={() => setSearchOpen(!searchOpen)}
-            ></Search>
-          </div>
+          {/* Search moved to its own component */}
+          <HeaderSearch />
 
           <UserMenu />
 
