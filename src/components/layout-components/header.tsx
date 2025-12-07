@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ShoppingCart, ShoppingBag } from "lucide-react";
 
@@ -68,7 +67,6 @@ const DropdownMenu = ({ title, href, items }: DropdownMenuProps) => (
 );
 
 export const Header = () => {
-
   return (
     <header className="sticky top-0 z-50 bg-white shadow">
       {/* Logo and Brand Name */}
