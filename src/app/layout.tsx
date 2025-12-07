@@ -2,10 +2,7 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
-
-import { CartProvider } from "@/context/cart-context";
 import { TRPCReactProvider } from "@/trpc/react";
-
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -19,14 +16,14 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
         <TRPCReactProvider>
-          <CartProvider>{children}</CartProvider>
+          {children}
           <Toaster />
         </TRPCReactProvider>
       </body>

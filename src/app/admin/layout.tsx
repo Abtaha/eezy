@@ -3,17 +3,12 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
-import { TRPCReactProvider } from "@/trpc/react";
-import { Header } from "@/components/layout-components/header";
-import { Footer } from "@/components/layout-components/footer";
-import { CartProvider } from "@/context/cart-context";
-
 import { auth } from "@/server/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Eezy",
+  title: "Eezy - Admin",
   description: "Eezy Shopping Store",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
@@ -30,17 +25,20 @@ export default async function AppLayout({
     headers: await headers(),
   });
 
-  if (session?.user && session.user.role !== "user") {
-    redirect("/admin");
+  if (
+    !session?.user ||
+    !(
+      session.user.role === "salesManager" ||
+      session.user.role === "supportManager" ||
+      session.user.role === "productManager"
+    )
+  ) {
+    redirect("/login");
   }
 
   return (
-    <CartProvider>
-      <div className={geist.variable}>
-        <Header />
-        <main className="grow">{children}</main>
-        <Footer />
-      </div>
-    </CartProvider>
+    <div className={geist.variable}>
+      <main className="grow">{children}</main>
+    </div>
   );
 }
