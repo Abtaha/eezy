@@ -59,7 +59,7 @@ export const CartComponent = () => {
               if (!session && !isPending) {
                 router.push("/login?callbackUrl=/checkout");
               } else {
-                router.push("/checkout");
+                window.location.href = "/checkout";
               }
             }}
             className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800"
