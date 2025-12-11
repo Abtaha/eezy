@@ -88,6 +88,43 @@ export const socialRouter = createTRPCRouter({
       return newRating[0];
     }),
 
+  getAverageRating: protectedProcedure
+    .input(
+      z.object({
+        productId: z.string().uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const ratingsForProduct = await db
+        .select()
+        .from(ratings)
+        .where(eq(ratings.productId, input.productId));
+
+      const sum = ratingsForProduct.reduce((acc, curr) => acc + curr.rating, 0);
+
+      return sum / ratingsForProduct.length;
+    }),
+
+  getComments: protectedProcedure
+    .input(
+      z.object({
+        productId: z.string().uuid(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const commentsForProduct = await db
+        .select()
+        .from(comments)
+        .where(
+          and(
+            eq(comments.productId, input.productId),
+            eq(comments.approved, true),
+          ),
+        );
+
+      return commentsForProduct;
+    }),
+
   addComment: protectedProcedure
     .input(
       z.object({
