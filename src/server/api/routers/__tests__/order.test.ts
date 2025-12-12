@@ -68,6 +68,7 @@ describe("Order Router", () => {
       productWarrantyStatus: true,
       productFrontImage: "/test-front.jpg",
       productBackImage: "/test-back.jpg",
+      productDistributor: "Test Distributor",
     });
   });
 

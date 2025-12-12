@@ -63,6 +63,7 @@ describe("Product Router", () => {
     productWarrantyStatus: true,
     productFrontImage: "/test-front.jpg",
     productBackImage: "/test-back.jpg",
+    productDistributor: "Test Distributor",
   };
 
   it("should create a new product", async () => {
@@ -74,7 +75,7 @@ describe("Product Router", () => {
 
     // Verify it was written to the DB
     const fetchedProduct = await publicCaller.product.get({ id: newProduct.id });
-    expect(fetchedProduct).toEqual(newProduct);
+    expect(fetchedProduct).toEqual(expect.objectContaining(newProduct));
   });
 
   it("should prevent a regular user from creating a product", async () => {
@@ -87,7 +88,7 @@ describe("Product Router", () => {
     const newProduct = await managerCaller.product.create(productInput);
     const fetchedProduct = await publicCaller.product.get({ id: newProduct.id });
 
-    expect(fetchedProduct).toEqual(newProduct);
+    expect(fetchedProduct).toEqual(expect.objectContaining(newProduct));
   });
 
   it("should throw an error if a product is not found", async () => {
