@@ -168,8 +168,54 @@ export default function ProductPage({
                 </p>
               </div>
 
+              <section className="rounded-lg bg-white p-6 shadow">
+                <h2 className="mb-4 text-xl font-bold">Specifications</h2>
+
+                <dl className="divide-y divide-gray-200">
+                  {/* Model */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">Model</dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.model}
+                    </dd>
+                  </div>
+
+                  {/* Serial Number */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Serial Number
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.serialNumber}
+                    </dd>
+                  </div>
+
+                  {/* Warranty */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Warranty
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.warrantyStatus
+                        ? "Under Warranty"
+                        : "No Warranty"}
+                    </dd>
+                  </div>
+
+                  {/* Distributor */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Distributor Information
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.distributor}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
               {/* Stock Info */}
-              <div className="mb-6">
+              <div className="my-6">
                 <p className="text-sm text-gray-600">
                   Stock:{" "}
                   <span

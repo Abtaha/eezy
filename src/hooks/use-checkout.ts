@@ -13,7 +13,10 @@ export function useCheckout() {
 
   const createOrderMutation = api.order.create.useMutation();
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (
+    shippingAddress: string,
+    paymentMethod: string,
+  ) => {
     if (!session && !isPending) {
       router.push("/login");
       return;
@@ -28,8 +31,8 @@ export function useCheckout() {
 
     try {
       const order = await createOrderMutation.mutateAsync({
-        shippingAddress: "Sabancı University, Tuzla / İstanbul, Turkey",
-        paymentMethod: "Credit Card",
+        shippingAddress,
+        paymentMethod,
         items,
       });
 

@@ -98,6 +98,7 @@ export const product = pgTable("product", {
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
+  distributor: text("distributor"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .$onUpdate(() => /* @__PURE__ */ new Date())

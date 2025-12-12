@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { TRPCClientError } from "@trpc/client";
+import { useRouter } from "next/navigation";
 
 interface ProductRatingProps {
   productId: string;
@@ -14,6 +15,7 @@ export default function ProductRating({
   productId,
   isLoggedIn,
 }: ProductRatingProps) {
+  const router = useRouter();
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -22,6 +24,7 @@ export default function ProductRating({
     onSuccess: () => {
       setSelectedRating(null);
       setSubmitted(false);
+      router.refresh();
     },
   });
 
@@ -100,4 +103,3 @@ export default function ProductRating({
     </div>
   );
 }
-
