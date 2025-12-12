@@ -6,6 +6,7 @@ import { Geist } from "next/font/google";
 import { auth } from "@/server/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { AdminHeader } from "@/components/admin/admin-header";
 
 export const metadata: Metadata = {
   title: "Eezy - Admin",
@@ -38,7 +39,10 @@ export default async function AppLayout({
 
   return (
     <div className={geist.variable}>
-      <main className="grow">{children}</main>
+      <div className="min-h-screen flex flex-col bg-background">
+        <AdminHeader />
+        <div className="flex-1">{children}</div>
+      </div>
     </div>
   );
 }

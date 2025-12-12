@@ -7,6 +7,7 @@ import { ilike } from "drizzle-orm";
 import {
   createTRPCRouter,
   productManagerProcedure,
+  protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
 
@@ -18,19 +19,42 @@ export const productRouter = createTRPCRouter({
       const awaitedproduct = await ctx.db.query.product.findFirst({
         //find the first matching product (since uuid is unique and there will only be 1)
         where: eq(product.id, input.id), //check if the product uuid matches the input uuid
+        with: {
+          ratings: true,
+        },
       });
 
       if (!awaitedproduct) {
         throw new Error("Product not found"); //throw error if no product with that uuid is found
       }
 
-      return awaitedproduct; //return the found product
+      return {
+        ...awaitedproduct,
+        rating:
+          awaitedproduct.ratings.length > 0
+            ? awaitedproduct.ratings
+                .map((rating) => rating.rating)
+                .reduce((a, b) => a + b, 0) / awaitedproduct.ratings.length
+            : 0,
+      };
     }),
 
   getAll: publicProcedure.query(async ({ ctx }) => {
-    //query to get all products
-    const awaitedproductsarray = await ctx.db.query.product.findMany(); //find all products
-    return awaitedproductsarray; //return the array of products
+    const awaitedproductsarray = await ctx.db.query.product.findMany({
+      with: {
+        ratings: true,
+      },
+    }); //find all products
+
+    return awaitedproductsarray.map((product) => ({
+      ...product,
+      rating:
+        product.ratings.length > 0
+          ? product.ratings
+              .map((rating) => rating.rating)
+              .reduce((a, b) => a + b, 0) / product.ratings.length
+          : 0,
+    }));
   }),
 
   delete: productManagerProcedure
@@ -61,6 +85,7 @@ export const productRouter = createTRPCRouter({
         productWarrantyStatus: z.boolean(),
         productFrontImage: z.string(),
         productBackImage: z.string(),
+        productDistributor: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -77,6 +102,7 @@ export const productRouter = createTRPCRouter({
           warrantyStatus: input.productWarrantyStatus,
           frontImage: input.productFrontImage,
           backImage: input.productBackImage,
+          distributor: input.productDistributor,
         })
         .returning();
 
