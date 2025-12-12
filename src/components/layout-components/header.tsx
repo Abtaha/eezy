@@ -81,50 +81,6 @@ export const Header = () => {
           </span>
         </Link>
 
-        {/* Categories */}
-        <div className="hidden space-x-6 md:flex">
-          <DropdownMenu
-            title="Women"
-            href="/category/women"
-            items={[
-              { href: "/category/women/dresses", label: "Dresses" },
-              { href: "/category/women/tops", label: "Tops" },
-              { href: "/category/women/pants", label: "Pants" },
-              { href: "/category/women/skirts", label: "Skirts" },
-              { href: "/category/women/shoes", label: "Shoes" },
-              { href: "/category/women/bags", label: "Bags" },
-              { href: "/category/women/jewelry", label: "Jewelry" },
-              { href: "/category/women/accessories", label: "Accessories" },
-            ]}
-          />
-
-          <DropdownMenu
-            title="Men"
-            href="/category/men"
-            items={[
-              { href: "/category/men/shirts", label: "Shirts" },
-              { href: "/category/men/t-shirts", label: "T-Shirts" },
-              { href: "/category/men/pants", label: "Pants" },
-              { href: "/category/men/jackets", label: "Jackets" },
-              { href: "/category/men/shoes", label: "Shoes" },
-              { href: "/category/men/watches", label: "Watches" },
-              { href: "/category/men/belts", label: "Belts" },
-              { href: "/category/men/accessories", label: "Accessories" },
-            ]}
-          />
-
-          <DropdownMenu
-            title="Kids"
-            href="/category/kids"
-            items={[
-              { href: "/category/kids/t-shirts", label: "T-Shirts" },
-              { href: "/category/kids/pants", label: "Pants" },
-              { href: "/category/kids/jackets", label: "Jackets" },
-              { href: "/category/kids/shoes", label: "Shoes" },
-            ]}
-          />
-        </div>
-
         <div className="flex items-center space-x-3">
           {/* Search moved to its own component */}
           <HeaderSearch />

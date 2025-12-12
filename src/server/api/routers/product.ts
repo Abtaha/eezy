@@ -6,6 +6,7 @@ import { ilike } from "drizzle-orm";
 
 import {
   createTRPCRouter,
+  productManagerProcedure,
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
@@ -56,7 +57,7 @@ export const productRouter = createTRPCRouter({
     }));
   }),
 
-  delete: protectedProcedure
+  delete: productManagerProcedure
     .input(
       z.object({ productid: z.string().uuid(), userid: z.string().uuid() }),
     ) //get input uuid's
@@ -72,7 +73,7 @@ export const productRouter = createTRPCRouter({
       await ctx.db.delete(product).where(eq(product.id, input.productid)); //delete the product if found
     }),
 
-  create: protectedProcedure
+  create: productManagerProcedure
     .input(
       z.object({
         productName: z.string(),
@@ -84,6 +85,7 @@ export const productRouter = createTRPCRouter({
         productWarrantyStatus: z.boolean(),
         productFrontImage: z.string(),
         productBackImage: z.string(),
+        productDistributor: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -100,6 +102,7 @@ export const productRouter = createTRPCRouter({
           warrantyStatus: input.productWarrantyStatus,
           frontImage: input.productFrontImage,
           backImage: input.productBackImage,
+          distributor: input.productDistributor,
         })
         .returning();
 
