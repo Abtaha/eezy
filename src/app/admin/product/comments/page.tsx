@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import Image from "next/image";
+import { api } from "@/trpc/react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
+import { TRPCClientError } from "@trpc/client";
+import { useRouter } from "next/navigation";
 
 type Comment = {
   id: string;
@@ -26,55 +31,66 @@ function formatDate(dateString: string) {
     minute: "2-digit",
   });
 }
-
-const initialComments: Comment[] = [
-  {
-    id: "1",
-    userId: "111",
-    comment: "Perfect!",
-    createdAt: "2025-12-06T13:00:00+03:00",
-    productId: "121212",
-    productName: "Black Hoodie",
-    productImage: "/store-images/hoodie-black-front.jpg",
-  },
-  {
-    id: "2",
-    userId: "222",
-    comment: "Bad quality",
-    createdAt: "2025-12-05T15:30:00+03:00",
-    productId: "123123",
-    productName: "Cargo Pants",
-    productImage: "/store-images/cargo-black-front.jpg",
-  },
-];
-
 export default function CommentsPage() {
-  const [comments, setComments] = useState<Comment[]>(initialComments);
+  const router = useRouter();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const { data: session } = authClient.useSession();
+
+  const { data: fetchedComments } = api.social.getCommentsAdmin.useQuery(
+    undefined,
+    {
+      enabled: !!session,
+    },
+  );
+
+  const approveCommentMutation = api.social.updateCommentApproval.useMutation({
+    onSuccess: () => {
+      router.refresh();
+    },
+  });
+
+  useEffect(() => {
+    if (fetchedComments) {
+      setComments(fetchedComments);
+    }
+  }, [fetchedComments]);
 
   const handleDecision = (id: string, _decision: "approved" | "denied") => {
-    // later call real router, for now just remove from list
     setComments((prev) => prev.filter((c) => c.id !== id));
+
+    try {
+      approveCommentMutation.mutate({
+        commentId: id,
+        approved: true,
+      });
+
+      toast.success("Comment approved successfully.");
+    } catch (err) {
+      if (err instanceof TRPCClientError) {
+        toast.error(err.message);
+      }
+    }
   };
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Unapproved comments</h2>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         Approve or deny comments before they appear on product pages.
       </p>
 
       {comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No pending comments.
-        </p>
+        <p className="text-muted-foreground text-sm">No pending comments.</p>
       ) : (
         <div className="space-y-3">
           {comments.map((comment) => (
             <Card key={comment.id}>
               <CardHeader className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">User ID: {comment.userId}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm font-medium">
+                    User ID: {comment.userId}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
                     Created At: {formatDate(comment.createdAt)}
                   </p>
                 </div>
@@ -97,21 +113,19 @@ export default function CommentsPage() {
 
               <CardContent>
                 {/* Product info */}
-                <div className="flex items-center gap-4 mb-3">
+                <div className="mb-3 flex items-center gap-4">
                   {comment.productImage && (
                     <Image
                       src={comment.productImage}
                       alt={comment.productName}
                       width={48}
                       height={48}
-                      className="rounded-md object-cover border"
+                      className="rounded-md border object-cover"
                     />
                   )}
                   <div>
-                    <p className="text-sm font-medium">
-                      {comment.productName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-medium">{comment.productName}</p>
+                    <p className="text-muted-foreground text-xs">
                       Product ID: {comment.productId}
                     </p>
                   </div>

@@ -3,48 +3,13 @@
 import ProductCard from "@/components/product-card";
 import ProductRating from "@/components/product-rating";
 import CommentSection from "@/components/comment-section";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useCart } from "@/context/cart-context";
 import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { notFound } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-
-// Dummy comments
-const DUMMY_COMMENTS = [
-  {
-    id: "1",
-    authorName: "Mew",
-    authorInitial: "M",
-    avatarColor: "bg-pink-500",
-    text: "Absolutely love this hoodie! The fabric is so soft and the pink color is exactly as shown.",
-    timestamp: "2 days ago",
-  },
-  {
-    id: "2",
-    authorName: "Squirtle",
-    authorInitial: "S",
-    avatarColor: "bg-blue-500",
-    text: "Fits true to size and the kangaroo pocket is surprisingly spacious. Already ordered two more in different colors.",
-    timestamp: "5 days ago",
-  },
-  {
-    id: "3",
-    authorName: "Bulbasaur",
-    authorInitial: "B",
-    avatarColor: "bg-green-500",
-    text: "Nice hoodie but runs a bit small. I usually wear M but needed L for a comfortable fit.",
-    timestamp: "1 week ago",
-  },
-  {
-    id: "4",
-    authorName: "Mewtwo",
-    authorInitial: "M",
-    avatarColor: "bg-purple-500",
-    text: "Incredibly cozy. Highly recommend! ⭐⭐⭐⭐⭐",
-    timestamp: "2 weeks ago",
-  },
-];
+import { type Comment } from "@/components/comment-section";
 
 export default function ProductPage({
   params,
@@ -245,7 +210,7 @@ export default function ProductPage({
         <ProductRating productId={productId} isLoggedIn={!!session} />
 
         {/* Comments Section */}
-        <CommentSection comments={DUMMY_COMMENTS} />
+        <CommentSection productId={productId} />
 
         {/* Related Products */}
         <div className="mb-8">
