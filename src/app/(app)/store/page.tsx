@@ -48,7 +48,7 @@ export default function StorePage() {
       name: product.name,
       category: product.category,
       price: parseFloat(product.price),
-      rating: 5,
+      rating: product.rating,
     }));
   }, [dbProducts]);
 

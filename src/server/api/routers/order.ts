@@ -156,6 +156,21 @@ export const orderRouter = createTRPCRouter({
         .where(eq(orders.id, input.orderId));
     }),
 
+  getAllAdmin: productManagerProcedure.query(async ({ ctx }) => {
+    const allOrders = await ctx.db.query.orders.findMany({
+      columns: {
+        id: true,
+        status: true,
+        totalAmount: true,
+        createdAt: true,
+        updatedAt: true,
+        userId: true,
+      },
+      orderBy: desc(orders.createdAt),
+    });
+    return allOrders;
+  }),
+
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
