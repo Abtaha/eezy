@@ -57,6 +57,7 @@ describe("Cart Router", () => {
       productWarrantyStatus: true,
       productFrontImage: "/test-front.jpg",
       productBackImage: "/test-back.jpg",
+      productDistributor: "Test Distributor",
     });
   });
 
@@ -115,6 +116,7 @@ describe("Cart Router", () => {
       productWarrantyStatus: false,
       productFrontImage: "/jean-front.jpg",
       productBackImage: "/jean-back.jpg",
+      productDistributor: "Test Distributor",
     });
     await userCaller.cart.addItem({ productId: anotherProduct.id, quantity: 1 });
 
