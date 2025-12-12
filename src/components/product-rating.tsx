@@ -1,42 +1,65 @@
-"use client"
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
+import { api } from "@/trpc/react";
+import { toast } from "sonner";
+import { TRPCClientError } from "@trpc/client";
 
 interface ProductRatingProps {
   productId: string;
   isLoggedIn: boolean; // Will be connected to auth later
-  onRatingSubmit?: (rating: number) => void; // For future backend integration
 }
 
-export default function ProductRating({ productId, isLoggedIn, onRatingSubmit }: ProductRatingProps) {
+export default function ProductRating({
+  productId,
+  isLoggedIn,
+}: ProductRatingProps) {
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  const updateRatingMutation = api.social.addRating.useMutation({
+    onSuccess: () => {
+      setSelectedRating(null);
+      setSubmitted(false);
+    },
+  });
+
+  const { data: mayRate } = api.social.canRate.useQuery(
+    { productId, type: "rating" },
+    { enabled: !!productId },
+  );
 
   // Don't show if user not logged in
   if (!isLoggedIn) {
     return null;
   }
 
+  if (!mayRate) {
+    return null;
+  }
+
   const handleStarClick = (rating: number) => {
     setSelectedRating(rating);
     setSubmitted(true);
-    
-    // Call the callback if provided (for future backend integration)
-    if (onRatingSubmit) {
-      onRatingSubmit(rating);
-    }
 
-    // Reset after 2 seconds to allow re-rating (for demo purposes)
-    setTimeout(() => {
-      setSubmitted(false);
-    }, 2000);
+    try {
+      updateRatingMutation.mutate({
+        productId,
+        rating,
+      });
+      toast.success("Thanks for rating!");
+    } catch (err) {
+      if (err instanceof TRPCClientError) {
+        toast.error(err.message);
+      }
+    }
   };
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <h3 className="font-semibold text-gray-900 mb-2">Rate this product</h3>
-      
+    <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <h3 className="mb-2 font-semibold text-gray-900">Rate this product</h3>
+
       {!submitted ? (
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -50,9 +73,11 @@ export default function ProductRating({ productId, isLoggedIn, onRatingSubmit }:
               <span
                 className={
                   (hoveredStar !== null && star <= hoveredStar) ||
-                  (hoveredStar === null && selectedRating !== null && star <= selectedRating)
-                    ? 'text-yellow-400'
-                    : 'text-gray-300'
+                  (hoveredStar === null &&
+                    selectedRating !== null &&
+                    star <= selectedRating)
+                    ? "text-yellow-400"
+                    : "text-gray-300"
                 }
               >
                 ★
@@ -61,15 +86,18 @@ export default function ProductRating({ productId, isLoggedIn, onRatingSubmit }:
           ))}
           {(hoveredStar || selectedRating) && (
             <span className="ml-2 text-sm text-gray-600">
-              {hoveredStar || selectedRating} star{(hoveredStar || selectedRating) !== 1 ? 's' : ''}
+              {hoveredStar || selectedRating} star
+              {(hoveredStar || selectedRating) !== 1 ? "s" : ""}
             </span>
           )}
         </div>
       ) : (
-        <div className="text-green-600 font-medium">
-          ✓ Thanks for rating! You gave {selectedRating} star{selectedRating !== 1 ? 's' : ''}
+        <div className="font-medium text-green-600">
+          ✓ Thanks for rating! You gave {selectedRating} star
+          {selectedRating !== 1 ? "s" : ""}
         </div>
       )}
     </div>
   );
 }
+
