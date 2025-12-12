@@ -5,17 +5,17 @@ export function Categories() {
   const categories = [
     {
       name: "Women",
-      href: "/store?category=women",
+      href: "/store?category=Women",
       image: "/women-category.jpg",
     },
     {
       name: "Men",
-      href: "/store?category=men",
+      href: "/store?category=Men",
       image: "/men-category.jpg",
     },
     {
       name: "Kids",
-      href: "/store?category=kids",
+      href: "/store?category=Kids",
       image: "/kids-category.jpg",
     },
   ];
