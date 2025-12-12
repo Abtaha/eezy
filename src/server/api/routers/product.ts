@@ -138,7 +138,7 @@ export const productRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        limit: z.number().int().min(1),
+        limit: z.number().int().min(1).max(10),
         category: z.string(),
       }),
     )
