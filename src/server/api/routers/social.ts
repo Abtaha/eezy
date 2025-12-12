@@ -1,4 +1,9 @@
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  productManagerProcedure,
+} from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
 import {
@@ -10,6 +15,7 @@ import {
 } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { timestamp } from "drizzle-orm/gel-core";
 
 //helper function that checks if user has the product delivered
 async function productDeliveredToUser(userID: string, productID: string) {
@@ -46,12 +52,27 @@ export const socialRouter = createTRPCRouter({
     .input(
       z.object({
         productId: z.string().uuid(),
+        type: z.enum(["comment", "rating"]),
       }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
       const mayRate = await productDeliveredToUser(userId, input.productId);
+
+      if (input.type === "rating") {
+        // Check if user has already rated the product
+        const ratingExists = await ctx.db.query.ratings.findFirst({
+          where: and(
+            eq(ratings.productId, input.productId),
+            eq(ratings.userId, userId),
+          ),
+        });
+
+        if (ratingExists) {
+          return false;
+        }
+      }
 
       return mayRate;
     }),
@@ -105,24 +126,76 @@ export const socialRouter = createTRPCRouter({
       return sum / ratingsForProduct.length;
     }),
 
-  getComments: protectedProcedure
+  getCommentsAdmin: productManagerProcedure.query(async ({ ctx, input }) => {
+    const commentsForProduct = await ctx.db.query.comments.findMany({
+      where: eq(comments.approved, false),
+      with: {
+        product: true,
+        user: true,
+      },
+    });
+
+    return commentsForProduct.map((comment) => ({
+      id: comment.id,
+      userId: comment.userId,
+      comment: comment.comment,
+      createdAt: new Date(comment.createdAt).toLocaleString(),
+      productId: comment.productId,
+      productName: comment.product.name,
+      productImage: comment.product.frontImage,
+    }));
+  }),
+
+  updateCommentApproval: productManagerProcedure
+    .input(
+      z.object({
+        commentId: z.string().uuid(),
+        approved: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const comment = await ctx.db.query.comments.findFirst({
+        where: eq(comments.id, input.commentId),
+      });
+
+      if (!comment) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await ctx.db
+        .update(comments)
+        .set({ approved: input.approved })
+        .where(eq(comments.id, input.commentId));
+    }),
+
+  getComments: publicProcedure
     .input(
       z.object({
         productId: z.string().uuid(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const commentsForProduct = await db
-        .select()
-        .from(comments)
-        .where(
-          and(
-            eq(comments.productId, input.productId),
-            eq(comments.approved, true),
-          ),
-        );
+      const commentsForProduct = await ctx.db.query.comments.findMany({
+        where: and(
+          eq(comments.productId, input.productId),
+          eq(comments.approved, true),
+        ),
+        with: {
+          product: true,
+          user: true,
+        },
+      });
 
-      return commentsForProduct;
+      return commentsForProduct.map((comment) => ({
+        id: comment.id,
+        authorName: comment.user.name,
+        authorInitial: comment.user.name.charAt(0),
+        avatarColor: comment.user.email.includes("@gmail.com")
+          ? "bg-blue-500"
+          : "bg-green-500",
+        text: comment.comment,
+        timestamp: new Date(comment.createdAt).toLocaleString(),
+      }));
     }),
 
   addComment: protectedProcedure
@@ -158,4 +231,3 @@ export const socialRouter = createTRPCRouter({
       return newComment[0];
     }),
 });
-
