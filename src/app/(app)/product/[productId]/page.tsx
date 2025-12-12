@@ -3,48 +3,12 @@
 import ProductCard from "@/components/product-card";
 import ProductRating from "@/components/product-rating";
 import CommentSection from "@/components/comment-section";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useCart } from "@/context/cart-context";
 import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { notFound } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-
-// Dummy comments
-const DUMMY_COMMENTS = [
-  {
-    id: "1",
-    authorName: "Mew",
-    authorInitial: "M",
-    avatarColor: "bg-pink-500",
-    text: "Absolutely love this hoodie! The fabric is so soft and the pink color is exactly as shown.",
-    timestamp: "2 days ago",
-  },
-  {
-    id: "2",
-    authorName: "Squirtle",
-    authorInitial: "S",
-    avatarColor: "bg-blue-500",
-    text: "Fits true to size and the kangaroo pocket is surprisingly spacious. Already ordered two more in different colors.",
-    timestamp: "5 days ago",
-  },
-  {
-    id: "3",
-    authorName: "Bulbasaur",
-    authorInitial: "B",
-    avatarColor: "bg-green-500",
-    text: "Nice hoodie but runs a bit small. I usually wear M but needed L for a comfortable fit.",
-    timestamp: "1 week ago",
-  },
-  {
-    id: "4",
-    authorName: "Mewtwo",
-    authorInitial: "M",
-    avatarColor: "bg-purple-500",
-    text: "Incredibly cozy. Highly recommend! ⭐⭐⭐⭐⭐",
-    timestamp: "2 weeks ago",
-  },
-];
 
 export default function ProductPage({
   params,
@@ -180,16 +144,15 @@ export default function ProductPage({
               {/* Rating Display */}
               <div className="mb-4 flex items-center gap-2">
                 <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className={i < 5 ? "text-yellow-400" : "text-gray-300"}
-                    >
-                      ★
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <span key={index} className="text-yellow-400">
+                      {index < product.rating ? "★" : "☆"}
                     </span>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">({5} stars)</span>
+                <span className="text-sm text-gray-600">
+                  ({product.rating} stars)
+                </span>
               </div>
 
               {/* Price */}
@@ -205,8 +168,54 @@ export default function ProductPage({
                 </p>
               </div>
 
+              <section className="rounded-lg bg-white p-6 shadow">
+                <h2 className="mb-4 text-xl font-bold">Specifications</h2>
+
+                <dl className="divide-y divide-gray-200">
+                  {/* Model */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">Model</dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.model}
+                    </dd>
+                  </div>
+
+                  {/* Serial Number */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Serial Number
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.serialNumber}
+                    </dd>
+                  </div>
+
+                  {/* Warranty */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Warranty
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.warrantyStatus
+                        ? "Under Warranty"
+                        : "No Warranty"}
+                    </dd>
+                  </div>
+
+                  {/* Distributor */}
+                  <div className="py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500">
+                      Distributor Information
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                      {product.distributor}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
               {/* Stock Info */}
-              <div className="mb-6">
+              <div className="my-6">
                 <p className="text-sm text-gray-600">
                   Stock:{" "}
                   <span
@@ -245,7 +254,7 @@ export default function ProductPage({
         <ProductRating productId={productId} isLoggedIn={!!session} />
 
         {/* Comments Section */}
-        <CommentSection comments={DUMMY_COMMENTS} />
+        <CommentSection productId={productId} />
 
         {/* Related Products */}
         <div className="mb-8">

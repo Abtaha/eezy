@@ -125,7 +125,7 @@ export default function CheckoutPage() {
     if (hasError) return;
 
     try {
-      await handleCheckout();
+      await handleCheckout(paymentInfo.billingAddress, "Credit Card");
       toast.success(`Order placed successfully! 🎉`);
       clearCart();
 
@@ -408,4 +408,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
