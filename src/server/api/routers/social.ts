@@ -52,12 +52,27 @@ export const socialRouter = createTRPCRouter({
     .input(
       z.object({
         productId: z.string().uuid(),
+        type: z.enum(["comment", "rating"]),
       }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
       const mayRate = await productDeliveredToUser(userId, input.productId);
+
+      if (input.type === "rating") {
+        // Check if user has already rated the product
+        const ratingExists = await ctx.db.query.ratings.findFirst({
+          where: and(
+            eq(ratings.productId, input.productId),
+            eq(ratings.userId, userId),
+          ),
+        });
+
+        if (ratingExists) {
+          return false;
+        }
+      }
 
       return mayRate;
     }),

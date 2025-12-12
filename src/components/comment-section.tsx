@@ -45,7 +45,7 @@ export default function CommentSection({ productId }: { productId: string }) {
     },
   });
   const mayRate = api.social.canRate.useQuery(
-    { productId },
+    { productId, type: "comment" },
     { enabled: !!session },
   );
 

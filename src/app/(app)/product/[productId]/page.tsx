@@ -9,7 +9,6 @@ import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { notFound } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { type Comment } from "@/components/comment-section";
 
 export default function ProductPage({
   params,
@@ -145,16 +144,15 @@ export default function ProductPage({
               {/* Rating Display */}
               <div className="mb-4 flex items-center gap-2">
                 <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className={i < 5 ? "text-yellow-400" : "text-gray-300"}
-                    >
-                      ★
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <span key={index} className="text-yellow-400">
+                      {index < product.rating ? "★" : "☆"}
                     </span>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">({5} stars)</span>
+                <span className="text-sm text-gray-600">
+                  ({product.rating} stars)
+                </span>
               </div>
 
               {/* Price */}
