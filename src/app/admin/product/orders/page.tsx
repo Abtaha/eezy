@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Select,
   SelectTrigger,
@@ -8,6 +8,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { api } from "@/trpc/react";
+import { authClient } from "@/lib/auth-client";
+
+import { toast } from "sonner";
+import { TRPCClientError } from "@trpc/client";
 
 type OrderStatus = "processing" | "in_transit" | "delivered";
 
@@ -31,35 +36,31 @@ function formatDate(dateString: string) {
   });
 }
 
-const initialOrders: Order[] = [
-  {
-    id: "ORD-001",
-    userId: "C1",
-    totalAmount: 499.9,
-    status: "processing",
-    createdAt: "2025-12-06T10:00:00+03:00",
-  },
-  {
-    id: "ORD-002",
-    userId: "C2",
-    totalAmount: 899,
-    status: "in_transit",
-    createdAt: "2025-12-05T15:30:00+03:00",
-  },
-  {
-    id: "ORD-003",
-    userId: "C3",
-    totalAmount: 199,
-    status: "delivered",
-    createdAt: "2025-12-04T09:15:00+03:00",
-  },
-];
-
 type SortKey = "createdAt_desc" | "createdAt_asc" | "status";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const { data: session } = authClient.useSession();
+  const [orders, setOrders] = useState<Order[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt_desc");
+
+  const { data: fetchedOrders } = api.order.getAllAdmin.useQuery(undefined, {
+    enabled: !!session,
+  });
+
+  const updateStatusMutation = api.order.updateStatus.useMutation();
+
+  useEffect(() => {
+    if (fetchedOrders) {
+      const mappedOrders: Order[] = fetchedOrders.map((order) => ({
+        id: order.id,
+        userId: order.userId.toString(),
+        totalAmount: parseFloat(order.totalAmount),
+        status: order.status as OrderStatus,
+        createdAt: order.createdAt.toString(),
+      }));
+      setOrders(mappedOrders);
+    }
+  }, [fetchedOrders]);
 
   const sortedOrders = useMemo(() => {
     const copy = [...orders];
@@ -67,8 +68,7 @@ export default function OrdersPage() {
       case "createdAt_asc":
         return copy.sort(
           (a, b) =>
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime()
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
       case "status":
         return copy.sort((a, b) => a.status.localeCompare(b.status));
@@ -76,17 +76,28 @@ export default function OrdersPage() {
       default:
         return copy.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
     }
   }, [orders, sortKey]);
 
   const updateStatus = (id: string, status: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o))
-    );
-    // later call Orders router mutation here
+    try {
+      updateStatusMutation.mutate({
+        orderId: id,
+        status,
+      });
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status } : o)),
+      );
+
+      toast.success(`Order ${id} updated successfully.`);
+    } catch (err) {
+      if (err instanceof TRPCClientError) {
+        toast.error(err.message);
+      }
+    }
   };
 
   return (
@@ -97,7 +108,7 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Sort by</span>
+          <span className="text-muted-foreground text-xs">Sort by</span>
           <Select
             value={sortKey}
             onValueChange={(value: SortKey) => setSortKey(value)}
@@ -130,7 +141,7 @@ export default function OrdersPage() {
               <tr key={order.id} className="border-t">
                 <td className="px-4 py-2 font-mono text-xs">{order.id}</td>
                 <td className="px-4 py-2">{order.userId}</td>
-                <td className="px-4 py-2 text-xs text-muted-foreground">
+                <td className="text-muted-foreground px-4 py-2 text-xs">
                   {new Date(formatDate(order.createdAt)).toLocaleString()}
                 </td>
                 <td className="px-4 py-2">$ {order.totalAmount.toFixed(2)}</td>
@@ -151,7 +162,6 @@ export default function OrdersPage() {
                     </SelectContent>
                   </Select>
                 </td>
-
               </tr>
             ))}
 
@@ -159,7 +169,7 @@ export default function OrdersPage() {
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-6 text-center text-sm text-muted-foreground"
+                  className="text-muted-foreground px-4 py-6 text-center text-sm"
                 >
                   No orders found.
                 </td>

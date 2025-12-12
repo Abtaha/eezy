@@ -2,8 +2,9 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
 
 const items = [
   { href: "/admin/product/comments", label: "Comments" },
@@ -20,7 +21,7 @@ export default function ProductAdminLayout({
   return (
     <div className="flex h-full">
       {/* Sidepanel */}
-      <aside className="w-56 border-r bg-muted/40 p-4 space-y-2">
+      <aside className="bg-muted/40 w-56 space-y-2 border-r p-4">
         <nav className="space-y-1">
           {items.map((item) => {
             const active = pathname.startsWith(item.href);
@@ -33,7 +34,7 @@ export default function ProductAdminLayout({
                   "block rounded-md px-3 py-2 text-sm transition",
                   active
                     ? "bg-background font-medium shadow-sm"
-                    : "text-muted-foreground hover:bg-background/60"
+                    : "text-muted-foreground hover:bg-background/60",
                 )}
               >
                 {item.label}
