@@ -101,7 +101,8 @@ export default function StorePage() {
     // Filter
     let result = products.filter((p) => {
       const matchesPrice =
-        p.price >= committedPriceRange[0] && p.price <= committedPriceRange[1];
+        p.price >= (committedPriceRange?.[0] ?? MIN_PRICE) &&
+        p.price <= (committedPriceRange?.[1] ?? MAX_PRICE);
 
       if (categoryFilter === "All" || !categoryFilter) {
         return matchesPrice;
