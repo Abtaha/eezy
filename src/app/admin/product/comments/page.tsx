@@ -61,7 +61,7 @@ export default function CommentsPage() {
     try {
       approveCommentMutation.mutate({
         commentId: id,
-        approved: true,
+        approved: _decision === "approved",
       });
 
       toast.success("Comment approved successfully.");
