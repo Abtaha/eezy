@@ -212,6 +212,47 @@ export const orderItems = pgTable("order_items", {
     .notNull(),
 });
 
+// conversation status
+export const conversationStatusEnum = pgEnum("conversation_status", [
+  "open",
+  "closed",
+  "archived",
+]);
+
+// conversation table 
+export const conversation = pgTable("conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => user.id, { onDelete: "set null" }), // nullable for guests
+  agentId: uuid("agent_id").notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  status: conversationStatusEnum("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// sender status
+export const senderTypeEnum = pgEnum("sender_type", [
+  "user",
+  "agent",
+]);
+
+// message table 
+export const message = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull()
+  .references(() => conversation.id, { onDelete: "cascade" }),
+  senderId: uuid("sender_id").notNull(),
+  senderType: senderTypeEnum("sender_type").notNull(),
+  content: text("content"),
+  fileUrl: text("file_url"),
+  fileType: text("file_type"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart),
   orders: many(orders),
@@ -301,5 +342,26 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   product: one(product, {
     fields: [ratings.productId],
     references: [product.id],
+  }),
+}));
+
+// relations for conversation
+export const conversationRelations = relations(conversation, ({ one, many }) => ({
+  user: one(user, {
+    fields: [conversation.userId],
+    references: [user.id],
+  }),
+  agent: one(user, {
+    fields: [conversation.agentId],
+    references: [user.id],
+  }),
+  messages: many(message),
+}));
+
+// relations for message
+export const messageRelations = relations(message, ({ one }) => ({
+  conversation: one(conversation, {
+    fields: [message.conversationId],
+    references: [conversation.id],
   }),
 }));
