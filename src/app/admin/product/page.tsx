@@ -37,7 +37,25 @@ export default function ProductManagerPage() {
           </Link>
         </Card>
       </div>
+
+      {/* Row 2: Products (under Comments) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/product/manage-products" className="block h-full">
+            <CardHeader>
+              <CardTitle>Products</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Add/remove products and manage stock.
+            </CardContent>
+          </Link>
+        </Card>
+
+        {/* Empty spacer to keep alignment */}
+        <div />
+      </div>
     </div>
   );
 }
+
 

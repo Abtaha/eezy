@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectTrigger,
@@ -39,6 +40,7 @@ function formatDate(dateString: string) {
 type SortKey = "createdAt_desc" | "createdAt_asc" | "status";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt_desc");
@@ -100,6 +102,10 @@ export default function OrdersPage() {
     }
   };
 
+  const goToOrder = (orderId: string) => {
+    router.push(`/admin/product/orders/${orderId}`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -136,26 +142,48 @@ export default function OrdersPage() {
               <th className="px-4 py-2">Status</th>
             </tr>
           </thead>
+
           <tbody>
             {sortedOrders.map((order) => (
-              <tr key={order.id} className="border-t">
+              <tr
+                key={order.id}
+                onClick={() => goToOrder(order.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") goToOrder(order.id);
+                }}
+                tabIndex={0}
+                className="border-t cursor-pointer outline-none transition-colors hover:bg-muted/40 focus:bg-muted/40"
+              >
                 <td className="px-4 py-2 font-mono text-xs">{order.id}</td>
                 <td className="px-4 py-2">{order.userId}</td>
                 <td className="text-muted-foreground px-4 py-2 text-xs">
                   {new Date(formatDate(order.createdAt)).toLocaleString()}
                 </td>
                 <td className="px-4 py-2">$ {order.totalAmount.toFixed(2)}</td>
-                <td className="px-4 py-2">
+
+                <td
+                  className="px-4 py-2"
+                  // IMPORTANT: clicking inside status cell should not navigate
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Select
                     value={order.status}
                     onValueChange={(value: OrderStatus) =>
                       updateStatus(order.id, value)
                     }
                   >
-                    <SelectTrigger className="h-8 w-32 text-xs">
+                    <SelectTrigger
+                      className="h-8 w-32 text-xs"
+                      // Prevent trigger click from bubbling to <tr>
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent
+                      // Extra safety: clicks inside dropdown shouldn't bubble
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <SelectItem value="processing">Processing</SelectItem>
                       <SelectItem value="in_transit">In transit</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
