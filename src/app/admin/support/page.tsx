@@ -2,7 +2,7 @@
 import React from "react";
 import ChatCard from "src/components/admin/chat-card";
 
-// Dummy data for now (as requested in the issue)
+// Dummy data for now
 const dummyChats = [
   {
     id: "1",
