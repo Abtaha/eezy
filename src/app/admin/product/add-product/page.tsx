@@ -13,30 +13,34 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-
+import { useUploadThing } from "@/lib/uploadthing";
 
 type UploadResponse = {
   url: string;
 };
 
-async function uploadFile(file: File): Promise<UploadResponse> {
-  const fd = new FormData();
-  fd.append("file", file);
-
-  const res = await fetch("/api/upload-image", {
-    method: "POST",
-    body: fd,
+function useImageUpload() {
+  const { startUpload, isUploading } = useUploadThing("productImageUploader", {
+    onUploadError: (error) => {
+      throw new Error(error.message);
+    },
   });
 
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || `Upload failed (${res.status})`);
-  }
+  const uploadImage = async (file: File): Promise<UploadResponse> => {
+    const res = await startUpload([file]);
 
-  const data = (await res.json()) as UploadResponse;
-  return data;
+    if (!res || !res[0]?.ufsUrl) {
+      throw new Error("Upload failed");
+    }
+
+    return { url: res[0].ufsUrl };
+  };
+
+  return {
+    uploadImage,
+    isUploading,
+  };
 }
-
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -47,6 +51,8 @@ export default function AddProductPage() {
       router.refresh();
     },
   });
+
+  const { uploadImage } = useImageUpload();
 
   const [name, setName] = useState("");
   const [model, setModel] = useState("");
@@ -61,9 +67,10 @@ export default function AddProductPage() {
   const [frontImage, setFrontImage] = useState("");
   const [backImage, setBackImage] = useState("");
 
-
-
-
+  const uploadFile = async (file: File) => {
+    const { url } = await uploadImage(file);
+    return url;
+  };
 
   const handleSubmit = () => {
     const q = Number.parseInt(quantityInStock, 10);
@@ -111,7 +118,8 @@ export default function AddProductPage() {
         <div>
           <h2 className="text-lg font-semibold">Add Product</h2>
           <p className="text-muted-foreground text-sm">
-            Fill all required fields, upload front/back images, then add to stock.
+            Fill all required fields, upload front/back images, then add to
+            stock.
           </p>
         </div>
 
@@ -137,14 +145,17 @@ export default function AddProductPage() {
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Category *</p>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} />
+              <Input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Distributor</p>
               <Input
-              value={distributor}
-              onChange={(e) => setDistributor(e.target.value)}
+                value={distributor}
+                onChange={(e) => setDistributor(e.target.value)}
               />
             </div>
           </div>
@@ -156,9 +167,6 @@ export default function AddProductPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-
-
-
 
           {/* Stock + pricing */}
           <div className="grid gap-3 md:grid-cols-3">
@@ -196,68 +204,67 @@ export default function AddProductPage() {
           {/* Images */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-                <p className="text-sm font-medium">Front Image *</p>
+              <p className="text-sm font-medium">Front Image *</p>
 
-                <Input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
+              <Input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-                        try {
-                        const r = await uploadFile(file);
-                        setFrontImage(r.url);
-                        toast.success("Front image uploaded.");
-                        } catch (e) {
-                        toast.error("Front image upload failed.");
-                        }
-                    }}
+                  try {
+                    const url = await uploadFile(file);
+                    setFrontImage(url);
+                    toast.success("Front image uploaded.");
+                  } catch (e) {
+                    toast.error("Front image upload failed.");
+                  }
+                }}
+              />
+              {frontImage && (
+                <Image
+                  src={frontImage}
+                  alt="Front preview"
+                  width={240}
+                  height={240}
+                  className="rounded-md border object-cover"
                 />
-                {frontImage && (
-                    <Image
-                        src={frontImage}
-                        alt="Front preview"
-                        width={240}
-                        height={240}
-                        className="rounded-md border object-cover"
-                    />
-                    )}
+              )}
             </div>
 
             <div className="space-y-2">
-                <p className="text-sm font-medium">Back Image *</p>
+              <p className="text-sm font-medium">Back Image *</p>
 
-                <Input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
+              <Input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-                        try {
-                        const r = await uploadFile(file);
-                        setBackImage(r.url);
-                        toast.success("Back image uploaded.");
-                        } catch (e) {
-                        toast.error("Back image upload failed.");
-                        }
-                    }}
+                  try {
+                    const url = await uploadFile(file);
+                    setBackImage(url);
+                    toast.success("Back image uploaded.");
+                  } catch (e) {
+                    toast.error("Back image upload failed.");
+                  }
+                }}
+              />
+              {backImage && (
+                <Image
+                  src={backImage}
+                  alt="Back preview"
+                  width={240}
+                  height={240}
+                  className="rounded-md border object-cover"
                 />
-                {backImage && (
-                    <Image
-                        src={backImage}
-                        alt="Back preview"
-                        width={240}
-                        height={240}
-                        className="rounded-md border object-cover"
-                    />
-                )}
+              )}
             </div>
           </div>
 
-
-          <div className="pt-2 flex justify-end">
+          <div className="flex justify-end pt-2">
             <Button onClick={handleSubmit} disabled={createMutation.isPending}>
               Add item to stock
             </Button>
