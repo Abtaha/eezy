@@ -9,6 +9,7 @@ import { authClient } from "@/lib/auth-client";
 const items = [
   { href: "/admin/product/comments", label: "Comments" },
   { href: "/admin/product/orders", label: "Orders" },
+  { href: "/admin/product/manage-products", label: "Products" },
 ];
 
 export default function ProductAdminLayout({
