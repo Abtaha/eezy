@@ -5,6 +5,11 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Toaster } from "sonner";
 
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+
+import { eezyFileRouter } from "@/app/api/uploadthing/core";
+
 export const metadata: Metadata = {
   title: "Eezy",
   description: "Eezy Shopping Store",
@@ -22,6 +27,15 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
+        <NextSSRPlugin
+          /**
+           * The `extractRouterConfig` will extract **only** the route configs
+           * from the router to prevent additional information from being
+           * leaked to the client. The data passed to the client is the same
+           * as if you were to fetch `/api/uploadthing` directly.
+           */
+          routerConfig={extractRouterConfig(eezyFileRouter)}
+        />
         <TRPCReactProvider>
           {children}
           <Toaster />
