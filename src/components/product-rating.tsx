@@ -5,6 +5,7 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { TRPCClientError } from "@trpc/client";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 interface ProductRatingProps {
   productId: string;
@@ -15,6 +16,7 @@ export default function ProductRating({
   productId,
   isLoggedIn,
 }: ProductRatingProps) {
+  const { data: session } = authClient.useSession();
   const router = useRouter();
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
@@ -30,7 +32,7 @@ export default function ProductRating({
 
   const { data: mayRate } = api.social.canRate.useQuery(
     { productId, type: "rating" },
-    { enabled: !!productId },
+    { enabled: !!productId && !!session },
   );
 
   // Don't show if user not logged in
