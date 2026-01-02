@@ -219,13 +219,14 @@ export const conversationStatusEnum = pgEnum("conversation_status", [
   "archived",
 ]);
 
-// conversation table 
+// conversation table
 export const conversation = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .references(() => user.id, { onDelete: "set null" }), // nullable for guests
-  agentId: uuid("agent_id").notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  sessionId: text("session_id").references(() => session.id, {
+    onDelete: "set null",
+  }),
+  agentId: text("agent_id").references(() => user.id, { onDelete: "set null" }),
   status: conversationStatusEnum("status").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -235,17 +236,14 @@ export const conversation = pgTable("conversations", {
 });
 
 // sender status
-export const senderTypeEnum = pgEnum("sender_type", [
-  "user",
-  "agent",
-]);
+export const senderTypeEnum = pgEnum("sender_type", ["user", "agent"]);
 
-// message table 
+// message table
 export const message = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").notNull()
-  .references(() => conversation.id, { onDelete: "cascade" }),
-  senderId: uuid("sender_id").notNull(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversation.id, { onDelete: "cascade" }),
   senderType: senderTypeEnum("sender_type").notNull(),
   content: text("content"),
   fileUrl: text("file_url"),
@@ -346,17 +344,24 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
 }));
 
 // relations for conversation
-export const conversationRelations = relations(conversation, ({ one, many }) => ({
-  user: one(user, {
-    fields: [conversation.userId],
-    references: [user.id],
+export const conversationRelations = relations(
+  conversation,
+  ({ one, many }) => ({
+    user: one(user, {
+      fields: [conversation.userId],
+      references: [user.id],
+    }),
+    agent: one(user, {
+      fields: [conversation.agentId],
+      references: [user.id],
+    }),
+    session: one(session, {
+      fields: [conversation.sessionId],
+      references: [session.id],
+    }),
+    messages: many(message),
   }),
-  agent: one(user, {
-    fields: [conversation.agentId],
-    references: [user.id],
-  }),
-  messages: many(message),
-}));
+);
 
 // relations for message
 export const messageRelations = relations(message, ({ one }) => ({
@@ -365,3 +370,4 @@ export const messageRelations = relations(message, ({ one }) => ({
     references: [conversation.id],
   }),
 }));
+
