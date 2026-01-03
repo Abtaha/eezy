@@ -18,6 +18,7 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  role: text("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -80,6 +81,7 @@ export const product = pgTable("product", {
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
+  distributor: text("distributor"),
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
@@ -278,7 +280,9 @@ export const refunds = pgTable("refunds", {
   orderItemId: uuid("order_item_id")
     .notNull()
     .references(() => orderItems.id, { onDelete: "cascade" }),
-  managerId: text("manager_id").references(() => user.id, { onDelete: "set null" }),
+  managerId: text("manager_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
   requestDate: timestamp("request_date").defaultNow().notNull(),
   status: refundStatusEnum("status").notNull(),
   refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
