@@ -1,14 +1,17 @@
 // src/server/api/routers/order/order.router.ts
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  productManagerProcedure,
+} from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { orders, orderItems, product } from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-//Delivery processing function stub
-async function processDelivery(orderId: string) {}
+import { processDelivery } from "@/server/services/send-invoice";
 
 // single order item
 const orderItem = z.object({
@@ -20,7 +23,7 @@ export const orderRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        items: z.array(orderItem).nonempty(), // non-empty items array
+        items: z.array(orderItem).min(1), // non-empty items array
         shippingAddress: z.string(),
         paymentMethod: z.string(),
       }),
@@ -126,11 +129,47 @@ export const orderRouter = createTRPCRouter({
         };
       });
 
-      // process delivery (stub)
       await processDelivery(transaction.orderId);
 
       return transaction;
     }),
+
+  updateStatus: productManagerProcedure
+    .input(
+      z.object({
+        orderId: z.string().uuid(),
+        status: z.enum(["processing", "in_transit", "delivered"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await ctx.db
+        .update(orders)
+        .set({ status: input.status })
+        .where(eq(orders.id, input.orderId));
+    }),
+
+  getAllAdmin: productManagerProcedure.query(async ({ ctx }) => {
+    const allOrders = await ctx.db.query.orders.findMany({
+      columns: {
+        id: true,
+        status: true,
+        totalAmount: true,
+        createdAt: true,
+        updatedAt: true,
+        userId: true,
+      },
+      orderBy: desc(orders.createdAt),
+    });
+    return allOrders;
+  }),
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -204,4 +243,48 @@ export const orderRouter = createTRPCRouter({
         })),
       };
     }),
+
+
+  getByIdAdmin: productManagerProcedure
+    .input(z.object({ orderId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // find the order by ID
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      // find the order items by order ID
+      const items = await ctx.db.query.orderItems.findMany({
+        where: eq(orderItems.orderId, input.orderId),
+        with: {
+          product: true,
+        },
+      });
+
+      return {
+        orderId: order.id,
+        userId: order.userId, // admin needs to know whose order it is
+        status: order.status,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod,
+        trackingNumber: order.trackingNumber,
+        orderItems: items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
+      };
+    }),
+
 });

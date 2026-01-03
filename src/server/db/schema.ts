@@ -8,6 +8,7 @@ import {
   serial,
   numeric,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 
 import { relations } from "drizzle-orm";
@@ -26,52 +27,64 @@ export const user = pgTable("user", {
     .notNull(),
 });
 
-export const session = pgTable("session", {
-  id: text("id").primaryKey(),
-  expiresAt: timestamp("expires_at").notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
 
-export const account = pgTable("account", {
-  id: text("id").primaryKey(),
-  accountId: text("account_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  idToken: text("id_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at"),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
-  scope: text("scope"),
-  password: text("password"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
 
-export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
 
 export const product = pgTable("product", {
   id: uuid("id").primaryKey(),
@@ -86,6 +99,7 @@ export const product = pgTable("product", {
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
+  distributor: text("distributor"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -152,6 +166,7 @@ export const ratings = pgTable("ratings", {
     .notNull(),
 });
 
+<<<<<<< HEAD
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart),
   comments: many(comments),
@@ -184,6 +199,8 @@ export const cartItemRelations = relations(cartItem, ({ one }) => ({
   }),
 }));
 
+=======
+>>>>>>> main
 // status for order
 export const orderStatusEnum = pgEnum("order_status", [
   "processing",
@@ -238,7 +255,107 @@ export const orderItems = pgTable("order_items", {
     .notNull(),
 });
 
+<<<<<<< HEAD
 export const orderItemRelations = relations(orderItems, ({ one, many }) => ({
+=======
+// conversation status
+export const conversationStatusEnum = pgEnum("conversation_status", [
+  "open",
+  "closed",
+  "archived",
+]);
+
+// conversation table
+export const conversation = pgTable("conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  sessionId: text("session_id").references(() => session.id, {
+    onDelete: "set null",
+  }),
+  agentId: text("agent_id").references(() => user.id, { onDelete: "set null" }),
+  status: conversationStatusEnum("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// sender status
+export const senderTypeEnum = pgEnum("sender_type", ["user", "agent"]);
+
+// message table
+export const message = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id")
+    .notNull()
+    .references(() => conversation.id, { onDelete: "cascade" }),
+  senderType: senderTypeEnum("sender_type").notNull(),
+  content: text("content"),
+  fileUrl: text("file_url"),
+  fileType: text("file_type"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userRelations = relations(user, ({ one, many }) => ({
+  cart: one(cart),
+  orders: many(orders),
+  comments: many(comments),
+  ratings: many(ratings),
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const cartRelations = relations(cart, ({ one, many }) => ({
+  user: one(user, {
+    fields: [cart.userID],
+    references: [user.id],
+  }),
+  items: many(cartItem),
+}));
+
+export const productRelations = relations(product, ({ many }) => ({
+  cartItems: many(cartItem),
+  orderItems: many(orderItems),
+  comments: many(comments),
+  ratings: many(ratings),
+}));
+
+export const cartItemRelations = relations(cartItem, ({ one }) => ({
+  cart: one(cart, {
+    fields: [cartItem.cartID],
+    references: [cart.id],
+  }),
+  product: one(product, {
+    fields: [cartItem.productID],
+    references: [product.id],
+  }),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(user, {
+    fields: [orders.userId],
+    references: [user.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+>>>>>>> main
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],
@@ -274,6 +391,7 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   }),
 }));
 
+<<<<<<< HEAD
 // refunds table
 export const refunds = pgTable("refunds", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -305,3 +423,33 @@ export const refundsRelations = relations(refunds, ({ one }) => ({
     references: [user.id],
   }),
 }));
+=======
+// relations for conversation
+export const conversationRelations = relations(
+  conversation,
+  ({ one, many }) => ({
+    user: one(user, {
+      fields: [conversation.userId],
+      references: [user.id],
+    }),
+    agent: one(user, {
+      fields: [conversation.agentId],
+      references: [user.id],
+    }),
+    session: one(session, {
+      fields: [conversation.sessionId],
+      references: [session.id],
+    }),
+    messages: many(message),
+  }),
+);
+
+// relations for message
+export const messageRelations = relations(message, ({ one }) => ({
+  conversation: one(conversation, {
+    fields: [message.conversationId],
+    references: [conversation.id],
+  }),
+}));
+
+>>>>>>> main

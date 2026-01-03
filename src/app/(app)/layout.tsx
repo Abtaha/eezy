@@ -8,6 +8,10 @@ import { Header } from "@/components/layout-components/header";
 import { Footer } from "@/components/layout-components/footer";
 import { CartProvider } from "@/context/cart-context";
 
+import { auth } from "@/server/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
 export const metadata: Metadata = {
   title: "Eezy",
   description: "Eezy Shopping Store",
@@ -19,16 +23,22 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session?.user && session.user.role !== "user") {
+    redirect("/admin");
+  }
+
   return (
     <CartProvider>
       <div className={geist.variable}>
         <Header />
-        <main className="grow">
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </main>
+        <main className="grow">{children}</main>
         <Footer />
       </div>
     </CartProvider>
