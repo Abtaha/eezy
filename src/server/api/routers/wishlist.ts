@@ -65,6 +65,20 @@ export const wishlistRouter = createTRPCRouter({
         wl = created;
       }
 
+      const existing = await ctx.db.query.wishlistItem.findFirst({
+        where: and(
+          eq(wishlistItem.wishlistId, wl.id),
+          eq(wishlistItem.productId, input.productId),
+        ),
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Product already in wishlist",
+        });
+      }
+
       await ctx.db.insert(wishlistItem).values({
         wishlistId: wl.id,
         productId: input.productId,
