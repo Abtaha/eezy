@@ -99,7 +99,6 @@ export const product = pgTable("product", {
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
-  distributor: text("distributor"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -166,53 +165,11 @@ export const ratings = pgTable("ratings", {
     .notNull(),
 });
 
-<<<<<<< HEAD
-export const userRelations = relations(user, ({ one, many }) => ({
-  cart: one(cart),
-  comments: many(comments),
-  ratings: many(ratings),
-  managedRefunds: many(refunds),
-}));
-
-export const cartRelations = relations(cart, ({ one, many }) => ({
-  user: one(user, {
-    fields: [cart.userID],
-    references: [user.id],
-  }),
-  items: many(cartItem),
-}));
-
-export const productRelations = relations(product, ({ many }) => ({
-  cartItems: many(cartItem),
-  comments: many(comments),
-  ratings: many(ratings),
-}));
-
-export const cartItemRelations = relations(cartItem, ({ one }) => ({
-  cart: one(cart, {
-    fields: [cartItem.cartID],
-    references: [cart.id],
-  }),
-  product: one(product, {
-    fields: [cartItem.productID],
-    references: [product.id],
-  }),
-}));
-
-=======
->>>>>>> main
 // status for order
 export const orderStatusEnum = pgEnum("order_status", [
   "processing",
   "in_transit",
   "delivered",
-]);
-
-// status for refund
-export const refundStatusEnum = pgEnum("refund_status", [
-  "pending",
-  "approved",
-  "rejected",
 ]);
 
 // order table
@@ -255,9 +212,6 @@ export const orderItems = pgTable("order_items", {
     .notNull(),
 });
 
-<<<<<<< HEAD
-export const orderItemRelations = relations(orderItems, ({ one, many }) => ({
-=======
 // conversation status
 export const conversationStatusEnum = pgEnum("conversation_status", [
   "open",
@@ -297,8 +251,38 @@ export const message = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// status for refund
+export const refundStatusEnum = pgEnum("refund_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
+// refunds table
+export const refunds = pgTable("refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderItemId: uuid("order_item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  managerId: text("manager_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  requestDate: timestamp("request_date").defaultNow().notNull(),
+  status: refundStatusEnum("status").notNull(),
+  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const userRelations = relations(user, ({ one, many }) => ({
-  cart: one(cart),
+  cart: one(cart, {
+    fields: [user.id],
+    references: [cart.userID],
+  }),
   orders: many(orders),
   comments: many(comments),
   ratings: many(ratings),
@@ -354,8 +338,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   orderItems: many(orderItems),
 }));
 
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
->>>>>>> main
+export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],
@@ -391,27 +374,6 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   }),
 }));
 
-<<<<<<< HEAD
-// refunds table
-export const refunds = pgTable("refunds", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  orderItemId: uuid("order_item_id")
-    .notNull()
-    .references(() => orderItems.id, { onDelete: "cascade" }),
-  managerId: text("manager_id").references(() => user.id, {
-    onDelete: "set null",
-  }),
-  requestDate: timestamp("request_date").defaultNow().notNull(),
-  status: refundStatusEnum("status").notNull(),
-  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
-  reason: text("reason").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
-
 // Refunds relations
 export const refundsRelations = relations(refunds, ({ one }) => ({
   orderItem: one(orderItems, {
@@ -423,7 +385,7 @@ export const refundsRelations = relations(refunds, ({ one }) => ({
     references: [user.id],
   }),
 }));
-=======
+
 // relations for conversation
 export const conversationRelations = relations(
   conversation,
@@ -451,5 +413,3 @@ export const messageRelations = relations(message, ({ one }) => ({
     references: [conversation.id],
   }),
 }));
-
->>>>>>> main
