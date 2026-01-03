@@ -4,12 +4,14 @@ import {
   createTRPCRouter,
   protectedProcedure,
   productManagerProcedure,
+  salesManagerProcedure
 } from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { orders, orderItems, product } from "@/server/db/schema";
+import { orders, orderItems, product, refunds, user } from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { emailService } from "@/server/services/emailService";
 
 import { processDelivery } from "@/server/services/send-invoice";
 
@@ -223,6 +225,21 @@ export const orderRouter = createTRPCRouter({
         },
       });
 
+      const itemIds = items.map((i) => i.id);
+      const refundRows =
+      itemIds.length === 0
+        ? []
+        : await ctx.db.query.refunds.findMany({
+            where: inArray(refunds.orderItemId, itemIds),
+            columns: {
+              orderItemId: true,
+              status: true,
+            },
+          });
+
+      const refundMap = new Map(refundRows.map((r) => [r.orderItemId, r.status]));
+
+
       return {
         orderId: order.id,
         status: order.status,
@@ -240,6 +257,8 @@ export const orderRouter = createTRPCRouter({
           subtotal: item.subtotal,
           productName: item.product.name,
           productImage: item.product.frontImage,
+
+          refundStatus: refundMap.get(item.id) ?? null,
         })),
       };
     }),
@@ -265,6 +284,20 @@ export const orderRouter = createTRPCRouter({
         },
       });
 
+      const itemIds = items.map((i) => i.id);
+      const refundRows =
+      itemIds.length === 0
+        ? []
+        : await ctx.db.query.refunds.findMany({
+            where: inArray(refunds.orderItemId, itemIds),
+            columns: {
+              orderItemId: true,
+              status: true,
+            },
+          });
+
+      const refundMap = new Map(refundRows.map((r) => [r.orderItemId, r.status]));
+
       return {
         orderId: order.id,
         userId: order.userId, // admin needs to know whose order it is
@@ -283,8 +316,220 @@ export const orderRouter = createTRPCRouter({
           subtotal: item.subtotal,
           productName: item.product.name,
           productImage: item.product.frontImage,
+
+          refundStatus: refundMap.get(item.id) ?? null,
         })),
       };
     }),
+
+  cancelOrder: protectedProcedure
+    .input(z.object({ orderId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const order = await ctx.db.query.orders.findFirst({
+        where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+      });
+
+      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+
+      if (order.status !== "processing") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only processing orders can be cancelled.",
+        });
+      }
+
+      await ctx.db
+        .update(orders)
+        .set({ status: "cancelled" })
+        .where(eq(orders.id, order.id));
+
+      return { ok: true };
+    }),
+
+
+
+  refundRequest: protectedProcedure
+    .input(
+      z.object({
+        orderId: z.string().uuid(),
+        // if you want refund for a single item, pass orderItemId; else it will request for all items
+        orderItemId: z.string().uuid().optional(),
+        reason: z.string().min(3).max(500),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const order = await ctx.db.query.orders.findFirst({
+        where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+      });
+
+      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+
+      if (order.status !== "delivered") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Refund is only available for delivered orders.",
+        });
+      }
+
+      // 30-day rule (using createdAt as you requested)
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      if (Date.now() - order.createdAt.getTime() > THIRTY_DAYS_MS) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Refund window expired (30 days).",
+        });
+      }
+
+      // Fetch items (single or all)
+      const items = await ctx.db.query.orderItems.findMany({
+        where: and(
+          eq(orderItems.orderId, order.id),
+          input.orderItemId ? eq(orderItems.id, input.orderItemId) : undefined,
+        ),
+      });
+
+      if (items.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order item(s) not found." });
+      }
+
+      const itemIds = items.map((i) => i.id);
+
+      // Prevent duplicates (allow only if previous was rejected)
+      const existing = await ctx.db.query.refunds.findMany({
+        where: inArray(refunds.orderItemId, itemIds),
+      });
+
+      const existingByItem = new Map(existing.map((r) => [r.orderItemId, r]));
+      for (const it of items) {
+        const prev = existingByItem.get(it.id);
+        if (prev && prev.status !== "rejected") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Refund request already exists for one of the selected items.",
+          });
+        }
+      }
+
+      // Create refund requests
+      await ctx.db.insert(refunds).values(
+        items.map((it) => ({
+          orderItemId: it.id,
+          managerId: null,
+          status: "pending" as const,
+          refundAmount: it.subtotal, // good default
+          reason: input.reason,
+        })),
+      );
+
+      return { ok: true };
+  }),
+
+  refundRequestsList: salesManagerProcedure.query(async ({ ctx }) => {
+  const rows = await ctx.db
+    .select({
+      refundId: refunds.id,
+      refundStatus: refunds.status,
+      refundAmount: refunds.refundAmount,
+      reason: refunds.reason,
+      requestDate: refunds.requestDate,
+      managerId: refunds.managerId,
+
+      orderItemId: orderItems.id,
+      quantity: orderItems.quantity,
+      unitPrice: orderItems.unitPrice,
+      subtotal: orderItems.subtotal,
+
+      orderId: orders.id,
+      orderStatus: orders.status,
+      orderCreatedAt: orders.createdAt,
+
+      productId: product.id,
+      productName: product.name,
+      productModel: product.model,
+      productCategory: product.category,
+      frontImage: product.frontImage,
+      backImage: product.backImage,
+
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+    })
+    .from(refunds)
+    .innerJoin(orderItems, eq(refunds.orderItemId, orderItems.id))
+    .innerJoin(orders, eq(orderItems.orderId, orders.id))
+    .innerJoin(product, eq(orderItems.productId, product.id))
+    .innerJoin(user, eq(orders.userId, user.id))
+    .where(eq(refunds.status, "pending"))
+    .orderBy(desc(refunds.requestDate));
+
+  return rows;
+}),
+
+
+refundDecision: salesManagerProcedure
+  .input(
+    z.object({
+      refundId: z.string().uuid(),
+      decision: z.enum(["approved", "rejected"]),
+    }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    const r = await ctx.db.query.refunds.findFirst({
+      where: eq(refunds.id, input.refundId),
+    });
+    if (!r) throw new TRPCError({ code: "NOT_FOUND", message: "Refund request not found." });
+
+    if (r.status !== "pending") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Only pending refund requests can be decided.",
+      });
+    }
+
+    const item = await ctx.db.query.orderItems.findFirst({
+      where: eq(orderItems.id, r.orderItemId),
+    });
+    if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Order item not found." });
+
+    const order = await ctx.db.query.orders.findFirst({
+      where: eq(orders.id, item.orderId),
+    });
+    if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+
+    const p = await ctx.db.query.product.findFirst({
+      where: eq(product.id, item.productId),
+    });
+    if (!p) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found." });
+
+    const u = await ctx.db.query.user.findFirst({
+      where: eq(user.id, order.userId),
+    });
+    if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+
+    await ctx.db
+      .update(refunds)
+      .set({
+        status: input.decision,
+        managerId: ctx.session.user.id,
+      })
+      .where(eq(refunds.id, r.id));
+
+    await emailService.sendRefundDecisionEmail({
+      to: u.email,
+      name: u.name,
+      orderId: order.id,
+      productName: p.name,
+      refundAmount: r.refundAmount,
+      decision: input.decision,
+    });
+
+    return { ok: true };
+  }),
+
+
 
 });
