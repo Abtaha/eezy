@@ -13,13 +13,20 @@ import {
 
 import { relations } from "drizzle-orm";
 
+export const userRoleEnum = pgEnum("user_role", [
+  "user",
+  "salesManager",
+  "supportAgent",
+  "productManager",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
-  role: text("role").default("user").notNull(),
+  role: userRoleEnum("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
