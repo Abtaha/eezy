@@ -170,6 +170,7 @@ export const orderStatusEnum = pgEnum("order_status", [
   "processing",
   "in_transit",
   "delivered",
+  "cancelled",
 ]);
 
 // order table
@@ -371,3 +372,40 @@ export const messageRelations = relations(message, ({ one }) => ({
   }),
 }));
 
+
+export const refundStatusEnum = pgEnum("refund_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "refunded",
+]);
+
+// refunds table
+export const refunds = pgTable("refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderItemId: uuid("order_item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  managerId: text("manager_id").references(() => user.id, { onDelete: "set null" }),
+  requestDate: timestamp("request_date").defaultNow().notNull(),
+  status: refundStatusEnum("status").notNull(),
+  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// Refunds relations
+export const refundsRelations = relations(refunds, ({ one }) => ({
+  orderItem: one(orderItems, {
+    fields: [refunds.orderItemId],
+    references: [orderItems.id],
+  }),
+  manager: one(user, {
+    fields: [refunds.managerId],
+    references: [user.id],
+  }),
+}));

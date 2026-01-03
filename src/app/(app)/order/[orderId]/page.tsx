@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/trpc/server";
-import { TRPCClientError } from "@trpc/client";
+
+import OrderItemActions from "./OrderItemActions";
+import OrderCancelButton from "./OrderCancelButton";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -27,23 +29,27 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const { orderId } = await params;
 
   let order;
-
   try {
     order = await api.order.getById({ orderId });
-  } catch (err) {
+  } catch {
     notFound();
   }
 
   return (
     <main className="mx-auto min-h-[130vh] w-full max-w-3xl space-y-6 p-4 md:p-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Order #{order.orderId}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Placed on {formatDate(order.createdAt.toString())} • Status:{" "}
-          <span className="font-medium">{order.status.toUpperCase()}</span>
-        </p>
+      {/* Header */}
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Order #{order.orderId}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Placed on {formatDate(order.createdAt.toString())} • Status:{" "}
+            <span className="font-medium">{order.status.toUpperCase()}</span>
+          </p>
+        </div>
+
+        <OrderCancelButton orderId={order.orderId} status={order.status} />
       </header>
 
       {/* General info */}
@@ -76,9 +82,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <thead className="bg-muted/50 text-xs">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">Product</th>
-                <th className="px-4 py-2 text-right font-medium">Quantity</th>
-                <th className="px-4 py-2 text-right font-medium">Unit price</th>
+                <th className="px-4 py-2 text-right font-medium">Qty</th>
+                <th className="px-4 py-2 text-right font-medium">Unit</th>
                 <th className="px-4 py-2 text-right font-medium">Subtotal</th>
+                <th className="px-4 py-2 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -104,6 +111,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   </td>
                   <td className="px-4 py-2 text-right">
                     {formatCurrency(parseFloat(item.subtotal))}
+                  </td>
+                  <td className="px-4 py-2">
+                    <OrderItemActions
+                      orderId={order.orderId}
+                      orderStatus={order.status}
+                      orderCreatedAtMs={new Date(order.createdAt.toString()).getTime()}
+                      itemId={item.id}
+                      itemSubtotal={item.subtotal}
+                      refundStatus={item.refundStatus}
+                    />
                   </td>
                 </tr>
               ))}
