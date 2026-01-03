@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { api } from "@/trpc/react";
 import { notFound } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function ProductPage({
   params,
@@ -16,9 +17,20 @@ export default function ProductPage({
   params: Promise<{ productId: string }>;
 }) {
   const { data: session } = authClient.useSession();
+  const utils = api.useUtils();
   const { productId } = use(params);
   const { addItem } = useCart();
   const [currentImage, setCurrentImage] = useState<"front" | "back">("front");
+
+  const addToWishlistMutation = api.wishlist.addItem.useMutation({
+    onSuccess: () => {
+      utils.wishlist.getMyWishlist.invalidate();
+      toast.success("Added to wishlist.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to add to wishlist.");
+    },
+  });
 
   const {
     data: product,
@@ -77,6 +89,10 @@ export default function ProductPage({
       </div>
     );
   }
+
+  const handleAddToWishlist = () => {
+    addToWishlistMutation.mutate({ productId: productId });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -226,26 +242,39 @@ export default function ProductPage({
                 </p>
               </div>
 
-              {/* Add to Cart Button - TODO: Connect to CartContext */}
-              <button
-                className={`w-full rounded-lg px-6 py-3 font-semibold transition-colors ${
-                  product.quantityInStock > 0
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "cursor-not-allowed bg-gray-300 text-gray-500"
-                }`}
-                disabled={product.quantityInStock === 0}
-                onClick={() => {
-                  addItem({
-                    id: productId,
-                    name: product.name,
-                    price: parseFloat(product.price),
-                    quantity: 1,
-                  });
-                  console.log("Added to cart");
-                }}
-              >
-                {product.quantityInStock > 0 ? "Add to Cart" : "Out of Stock"}
-              </button>
+              <div className="flex flex-col gap-y-4">
+                {/* Add to Cart Button - TODO: Connect to CartContext */}
+                <button
+                  className={`w-full rounded-lg px-6 py-3 font-semibold transition-colors ${
+                    product.quantityInStock > 0
+                      ? "cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
+                      : "cursor-not-allowed bg-gray-300 text-gray-500"
+                  }`}
+                  disabled={product.quantityInStock === 0}
+                  onClick={() => {
+                    addItem({
+                      id: productId,
+                      name: product.name,
+                      price: parseFloat(product.price),
+                      quantity: 1,
+                    });
+                    console.log("Added to cart");
+                  }}
+                >
+                  {product.quantityInStock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+
+                {session?.user && (
+                  <button
+                    className={
+                      "w-full cursor-pointer rounded-lg border-2 border-gray-300 px-6 py-3 font-semibold text-black transition-colors hover:bg-gray-300"
+                    }
+                    onClick={handleAddToWishlist}
+                  >
+                    Add to Wishlist
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
