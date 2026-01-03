@@ -285,6 +285,37 @@ export const refunds = pgTable("refunds", {
     .notNull(),
 });
 
+export const wishlist = pgTable("wishlist", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const wishlistItem = pgTable(
+  "wishlist_item",
+  {
+    id: serial("id").primaryKey(),
+    wishlistId: integer("wishlist_id")
+      .notNull()
+      .references(() => wishlist.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("wishlist_item_wishlist_idx").on(table.wishlistId),
+    index("wishlist_item_product_idx").on(table.productId),
+  ],
+);
+
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart, {
     fields: [user.id],
@@ -295,6 +326,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   ratings: many(ratings),
   sessions: many(session),
   accounts: many(account),
+  wishlists: one(wishlist),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -324,6 +356,7 @@ export const productRelations = relations(product, ({ many }) => ({
   orderItems: many(orderItems),
   comments: many(comments),
   ratings: many(ratings),
+  wishlistItems: many(wishlistItem),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
@@ -418,5 +451,24 @@ export const messageRelations = relations(message, ({ one }) => ({
   conversation: one(conversation, {
     fields: [message.conversationId],
     references: [conversation.id],
+  }),
+}));
+
+export const wishlistRelations = relations(wishlist, ({ one, many }) => ({
+  user: one(user, {
+    fields: [wishlist.userId],
+    references: [user.id],
+  }),
+  items: many(wishlistItem),
+}));
+
+export const wishlistItemRelations = relations(wishlistItem, ({ one }) => ({
+  wishlist: one(wishlist, {
+    fields: [wishlistItem.wishlistId],
+    references: [wishlist.id],
+  }),
+  product: one(product, {
+    fields: [wishlistItem.productId],
+    references: [product.id],
   }),
 }));
