@@ -94,11 +94,11 @@ export const product = pgTable("product", {
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
+  distributor: text("distributor"),
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
-  distributor: text("distributor"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -251,8 +251,38 @@ export const message = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// status for refund
+export const refundStatusEnum = pgEnum("refund_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
+// refunds table
+export const refunds = pgTable("refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderItemId: uuid("order_item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  managerId: text("manager_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  requestDate: timestamp("request_date").defaultNow().notNull(),
+  status: refundStatusEnum("status").notNull(),
+  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const userRelations = relations(user, ({ one, many }) => ({
-  cart: one(cart),
+  cart: one(cart, {
+    fields: [user.id],
+    references: [cart.userID],
+  }),
   orders: many(orders),
   comments: many(comments),
   ratings: many(ratings),
@@ -308,7 +338,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   orderItems: many(orderItems),
 }));
 
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],
@@ -317,6 +347,7 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.productId],
     references: [product.id],
   }),
+  refunds: many(refunds),
 }));
 
 // relations for commets
@@ -340,6 +371,18 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   product: one(product, {
     fields: [ratings.productId],
     references: [product.id],
+  }),
+}));
+
+// Refunds relations
+export const refundsRelations = relations(refunds, ({ one }) => ({
+  orderItem: one(orderItems, {
+    fields: [refunds.orderItemId],
+    references: [orderItems.id],
+  }),
+  manager: one(user, {
+    fields: [refunds.managerId],
+    references: [user.id],
   }),
 }));
 
@@ -370,4 +413,3 @@ export const messageRelations = relations(message, ({ one }) => ({
     references: [conversation.id],
   }),
 }));
-
