@@ -11,7 +11,7 @@ export default function SalesManagerPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="hover:bg-muted/60 transition">
-          <Link href="/admin/product/comments" className="block h-full">
+          <Link href="/admin/sales/discount" className="block h-full">
             <CardHeader>
               <CardTitle>Discounts</CardTitle>
             </CardHeader>
@@ -22,7 +22,7 @@ export default function SalesManagerPage() {
         </Card>
 
         <Card className="hover:bg-muted/60 transition">
-          <Link href="/admin/product/orders" className="block h-full">
+          <Link href="/admin/sales/invoices" className="block h-full">
             <CardHeader>
               <CardTitle>Invoices</CardTitle>
             </CardHeader>

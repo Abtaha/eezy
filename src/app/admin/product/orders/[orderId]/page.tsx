@@ -58,13 +58,13 @@ export default function AdminOrderDetailPage() {
   });
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading…</div>;
+    return <div className="text-muted-foreground text-sm">Loading…</div>;
   }
 
   if (!data) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Order not found.</p>
+        <p className="text-muted-foreground text-sm">Order not found.</p>
         <Link
           href="/admin/product/orders"
           className="text-sm underline underline-offset-4"
@@ -83,7 +83,7 @@ export default function AdminOrderDetailPage() {
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Order details</h2>
-          <p className="font-mono text-xs text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-xs">
             {data.orderId}
           </p>
         </div>
@@ -150,7 +150,9 @@ export default function AdminOrderDetailPage() {
 
             <div className="grid gap-2 sm:grid-cols-2">
               <div>
-                <p className="text-muted-foreground text-xs">Shipping address</p>
+                <p className="text-muted-foreground text-xs">
+                  Shipping address
+                </p>
                 <p className="whitespace-pre-wrap">
                   {data.shippingAddress ?? "-"}
                 </p>
@@ -172,7 +174,17 @@ export default function AdminOrderDetailPage() {
           <CardContent className="space-y-2 text-sm">
             <div>
               <p className="text-muted-foreground text-xs">User ID</p>
-              <p className="font-mono text-xs break-all">{data.userId}</p>
+              <p className="font-mono text-xs break-all">{data.user.id}</p>
+            </div>
+
+            <div>
+              <p className="text-muted-foreground text-xs">Name</p>
+              <p className="font-mono text-xs break-all">{data.user.name}</p>
+            </div>
+
+            <div>
+              <p className="text-muted-foreground text-xs">Email</p>
+              <p className="font-mono text-xs break-all">{data.user.email}</p>
             </div>
           </CardContent>
         </Card>
@@ -191,7 +203,7 @@ export default function AdminOrderDetailPage() {
               className="flex items-center justify-between gap-4 rounded-md border p-3"
             >
               <div className="flex items-center gap-3">
-                <div className="relative h-12 w-12 overflow-hidden rounded-md border bg-muted/30">
+                <div className="bg-muted/30 relative h-12 w-12 overflow-hidden rounded-md border">
                   {it.productImage && (
                     <Image
                       src={it.productImage}
@@ -204,19 +216,23 @@ export default function AdminOrderDetailPage() {
 
                 <div>
                   <p className="text-sm font-medium">{it.productName}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Quantity: {it.quantity}
                   </p>
                 </div>
               </div>
 
               <div className="text-right">
-                <p className="text-sm font-medium">
-                  {money(it.subtotal)}
-                </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm font-medium">{money(it.subtotal)}</p>
+                <p className="text-muted-foreground text-xs">
                   Unit: {money(it.unitPrice)}
                 </p>
+
+                {parseFloat(it.discountPercent) > 0 && (
+                  <p className="text-muted-foreground text-xs">
+                    Discount: {it.discountPercent}%
+                  </p>
+                )}
               </div>
             </div>
           ))}

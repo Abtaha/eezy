@@ -16,6 +16,7 @@ export interface CartItem {
   id: string;
   name: string;
   price: number;
+  discount: number;
   quantity: number;
 }
 
@@ -86,6 +87,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         id: item.productID,
         name: item.product.name,
         price: Number(item.product.price),
+        discount: Number(item.product.discountPercentage),
         quantity: item.quantity,
       }));
 
@@ -190,7 +192,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = cart.reduce(
+    (sum, item) =>
+      sum +
+      (item.discount > 0
+        ? item.price * (1 - item.discount / 100)
+        : item.price) *
+        item.quantity,
+    0,
+  );
 
   return (
     <CartContext.Provider

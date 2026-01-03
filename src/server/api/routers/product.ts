@@ -4,12 +4,16 @@ import { and, ne, eq } from "drizzle-orm/sql/expressions/conditions";
 import { randomUUID } from "crypto";
 import { ilike } from "drizzle-orm";
 
+import { wishlistItem } from "@/server/db/schema";
+
 import {
   createTRPCRouter,
   productManagerProcedure,
   protectedProcedure,
   publicProcedure,
+  salesManagerProcedure,
 } from "@/server/api/trpc";
+import { sendWishlistEmail } from "@/server/services/send-wishlist";
 
 export const productRouter = createTRPCRouter({
   get: publicProcedure
@@ -170,6 +174,29 @@ export const productRouter = createTRPCRouter({
     return rows;
   }),
 
+  listForPriceAdmin: salesManagerProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.query.product.findMany({
+      columns: {
+        id: true,
+        name: true,
+        model: true,
+        frontImage: true,
+        price: true,
+        quantityInStock: true,
+        discountPercentage: true,
+      },
+      orderBy: (p, { asc }) => [asc(p.serialNumber)],
+    });
+
+    return rows.map((p) => {
+      return {
+        ...p,
+        price: Number(p.price),
+        discount: Number(p.discountPercentage),
+      };
+    });
+  }),
+
   updateStock: productManagerProcedure
     .input(
       z.object({
@@ -184,6 +211,28 @@ export const productRouter = createTRPCRouter({
         .where(eq(product.id, input.productId));
 
       return { ok: true };
+    }),
+
+  updatePrice: salesManagerProcedure
+    .input(
+      z.object({
+        productId: z.string().uuid(),
+        price: z.number().min(0),
+        discount: z.number().min(0).max(100),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(product)
+        .set({
+          price: input.price.toFixed(2),
+          discountPercentage: input.discount,
+        })
+        .where(eq(product.id, input.productId));
+
+      if (input.discount > 0) {
+        await sendWishlistEmail(input.productId);
+      }
     }),
 
   deleteAdmin: productManagerProcedure
@@ -215,27 +264,25 @@ export const productRouter = createTRPCRouter({
         frontImage: z.string().min(1),
         backImage: z.string().min(1),
       }),
-  )
+    )
     .mutation(async ({ ctx, input }) => {
       const newProduct = await ctx.db
-      .insert(product)
-      .values({
-        id: randomUUID(),
-        name: input.name,
-        model: input.model,
-        category: input.category,
-        description: input.description ?? null,
-        distributor: input.distributor ?? null,
-        quantityInStock: input.quantityInStock,
-        price: input.price.toFixed(2),
-        warrantyStatus: input.warrantyStatus,
-        frontImage: input.frontImage,
-        backImage: input.backImage,
-      })
-      .returning();
+        .insert(product)
+        .values({
+          id: randomUUID(),
+          name: input.name,
+          model: input.model,
+          category: input.category,
+          description: input.description ?? null,
+          distributor: input.distributor ?? null,
+          quantityInStock: input.quantityInStock,
+          price: input.price.toFixed(2),
+          warrantyStatus: input.warrantyStatus,
+          frontImage: input.frontImage,
+          backImage: input.backImage,
+        })
+        .returning();
 
-    return newProduct[0];
-  }),
-
-
+      return newProduct[0];
+    }),
 });

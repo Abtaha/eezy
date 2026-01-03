@@ -18,6 +18,7 @@ export default function WishlistCard({
   name,
   category,
   price,
+  discountPercentage,
   rating,
 }: {
   id: string;
@@ -26,6 +27,7 @@ export default function WishlistCard({
   name: string;
   category: string;
   price: number;
+  discountPercentage: number;
   rating: number;
 }) {
   const router = useRouter();
@@ -48,7 +50,8 @@ export default function WishlistCard({
         {
           id: productId,
           name,
-          price,
+          price: price,
+          discount: discountPercentage,
           quantity: 1,
         },
         true,
@@ -64,6 +67,9 @@ export default function WishlistCard({
   };
 
   const isLoading = removeMutation.isPending;
+
+  const finalPrice =
+    discountPercentage > 0 ? price * (1 - discountPercentage / 100) : price;
 
   return (
     <Card className="relative w-full">
@@ -99,7 +105,13 @@ export default function WishlistCard({
             <p className="text-muted-foreground text-sm">{category}</p>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">${price.toFixed(2)}</span>
+              <span className="text-md font-medium">
+                ${finalPrice.toFixed(2)}
+              </span>
+
+              <span className="text-xs text-gray-500 line-through">
+                ${price.toFixed(2)}
+              </span>
               <Badge variant="secondary">{rating}/5 ★</Badge>
             </div>
           </div>
