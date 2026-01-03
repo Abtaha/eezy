@@ -54,6 +54,7 @@ export function Bestsellers() {
                   name={product.name}
                   category={product.category}
                   price={parseFloat(product.price)}
+                  discountPercentage={product.discountPercentage}
                   rating={product.rating}
                 />
               </div>

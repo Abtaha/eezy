@@ -94,6 +94,11 @@ export default function ProductPage({
     addToWishlistMutation.mutate({ productId: productId });
   };
 
+  const price = Number(product.price);
+  const discount = product.discountPercentage;
+
+  const finalPrice = discount > 0 ? price * (1 - discount / 100) : price;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-7xl px-4">
@@ -172,9 +177,27 @@ export default function ProductPage({
               </div>
 
               {/* Price */}
-              <p className="mb-6 text-4xl font-bold text-gray-900">
-                ${parseFloat(product.price).toFixed(2)}
-              </p>
+              <div className="mb-6 flex flex-col gap-1">
+                {discount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 line-through">
+                      ${price.toFixed(2)}
+                    </span>
+
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      {discount}% OFF
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-bold tracking-tight text-gray-900">
+                    ${finalPrice.toFixed(2)}
+                  </span>
+
+                  <span className="pb-1 text-sm text-gray-500">USD</span>
+                </div>
+              </div>
 
               {/* Description */}
               <div className="mb-6">
@@ -256,6 +279,7 @@ export default function ProductPage({
                       id: productId,
                       name: product.name,
                       price: parseFloat(product.price),
+                      discount: product.discountPercentage,
                       quantity: 1,
                     });
                     console.log("Added to cart");
@@ -315,6 +339,7 @@ export default function ProductPage({
                     name={product.name}
                     category={product.category}
                     price={parseFloat(product.price)}
+                    discountPercentage={product.discountPercentage}
                     rating={4}
                   />
                 ))}

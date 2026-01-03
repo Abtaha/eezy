@@ -105,6 +105,7 @@ export const product = pgTable("product", {
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  discountPercentage: integer("discount_percentage").default(0).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -210,6 +211,12 @@ export const orderItems = pgTable("order_items", {
 
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discountPercent: numeric("discount_percent", {
+    precision: 10,
+    scale: 2,
+  })
+    .default("0")
+    .notNull(),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

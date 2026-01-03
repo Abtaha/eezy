@@ -28,6 +28,7 @@ export default async function WishlistPage() {
               name={item.product.name}
               category={item.product.category}
               price={parseFloat(item.product.price)}
+              discountPercentage={item.product.discountPercentage}
               rating={item.product.rating}
             />
           ))}
