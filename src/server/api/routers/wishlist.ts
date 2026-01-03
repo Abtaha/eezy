@@ -11,13 +11,35 @@ export const wishlistRouter = createTRPCRouter({
       with: {
         items: {
           with: {
-            product: true,
+            product: {
+              with: {
+                ratings: true,
+              },
+            },
           },
         },
       },
     });
 
-    return wl ?? { items: [] };
+    if (!wl) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+
+    return {
+      ...wl,
+      items: wl.items.map((item) => ({
+        ...item,
+        product: {
+          ...item.product,
+          rating:
+            item.product.ratings.length > 0
+              ? item.product.ratings
+                  .map((rating) => rating.rating)
+                  .reduce((a, b) => a + b, 0) / item.product.ratings.length
+              : 0,
+        },
+      })),
+    };
   }),
 
   addItem: protectedProcedure

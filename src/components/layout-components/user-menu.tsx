@@ -20,6 +20,7 @@ import {
   LogOutIcon,
   CreditCardIcon,
   ReceiptText,
+  Heart,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -56,6 +57,12 @@ export const UserMenu = () => {
       icon: ReceiptText,
       property: "Order History",
       onClick: () => router.push("/orders"),
+    },
+
+    {
+      icon: Heart,
+      property: "Wishlist",
+      onClick: () => router.push("/wishlist"),
     },
     {
       icon: LogOutIcon,

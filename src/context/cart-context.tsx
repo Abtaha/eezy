@@ -21,7 +21,7 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem, disableToast?: boolean) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
   mergeCart: (items: CartItem[]) => void;
@@ -48,7 +48,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: () => {
       utils.cart.getCart.invalidate();
-      toast.success("Item added to cart");
     },
     onError: (err) => {
       toast.error(err.message);
@@ -130,7 +129,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cart, isGuest]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = (item: CartItem, disableToast = false) => {
     if (isAuthenticated) {
       addItemMutation.mutate({ productId: item.id, quantity: item.quantity });
     } else {
@@ -145,6 +144,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         return [...prev, item];
       });
+    }
+
+    if (!disableToast) {
       toast.success("Item added to cart");
     }
   };
