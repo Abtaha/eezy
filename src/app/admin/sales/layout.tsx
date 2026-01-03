@@ -5,12 +5,11 @@ import { headers } from "next/headers";
 import Sidebar from "@/components/admin/sidebar";
 
 const items = [
-  { href: "/admin/product/comments", label: "Comments" },
-  { href: "/admin/product/orders", label: "Orders" },
-  { href: "/admin/product/manage-products", label: "Products" },
+  { href: "/admin/sales/discount", label: "Discounts" },
+  { href: "/admin/sales/invoices", label: "Invoices" },
 ];
 
-export default async function ProductAdminLayout({
+export default async function SalesAdminLayout({
   children,
 }: {
   children: ReactNode;
@@ -19,7 +18,7 @@ export default async function ProductAdminLayout({
     headers: await headers(),
   });
 
-  if (session?.user?.role !== "productManager") {
+  if (session?.user?.role !== "salesManager") {
     redirect("/admin");
   }
 
