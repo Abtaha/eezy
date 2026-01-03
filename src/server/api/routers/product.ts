@@ -6,6 +6,7 @@ import { ilike } from "drizzle-orm";
 
 import {
   createTRPCRouter,
+  productManagerProcedure,
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
@@ -18,22 +19,45 @@ export const productRouter = createTRPCRouter({
       const awaitedproduct = await ctx.db.query.product.findFirst({
         //find the first matching product (since uuid is unique and there will only be 1)
         where: eq(product.id, input.id), //check if the product uuid matches the input uuid
+        with: {
+          ratings: true,
+        },
       });
 
       if (!awaitedproduct) {
         throw new Error("Product not found"); //throw error if no product with that uuid is found
       }
 
-      return awaitedproduct; //return the found product
+      return {
+        ...awaitedproduct,
+        rating:
+          awaitedproduct.ratings.length > 0
+            ? awaitedproduct.ratings
+                .map((rating) => rating.rating)
+                .reduce((a, b) => a + b, 0) / awaitedproduct.ratings.length
+            : 0,
+      };
     }),
 
   getAll: publicProcedure.query(async ({ ctx }) => {
-    //query to get all products
-    const awaitedproductsarray = await ctx.db.query.product.findMany(); //find all products
-    return awaitedproductsarray; //return the array of products
+    const awaitedproductsarray = await ctx.db.query.product.findMany({
+      with: {
+        ratings: true,
+      },
+    }); //find all products
+
+    return awaitedproductsarray.map((product) => ({
+      ...product,
+      rating:
+        product.ratings.length > 0
+          ? product.ratings
+              .map((rating) => rating.rating)
+              .reduce((a, b) => a + b, 0) / product.ratings.length
+          : 0,
+    }));
   }),
 
-  delete: protectedProcedure
+  delete: productManagerProcedure
     .input(
       z.object({ productid: z.string().uuid(), userid: z.string().uuid() }),
     ) //get input uuid's
@@ -49,7 +73,7 @@ export const productRouter = createTRPCRouter({
       await ctx.db.delete(product).where(eq(product.id, input.productid)); //delete the product if found
     }),
 
-  create: protectedProcedure
+  create: productManagerProcedure
     .input(
       z.object({
         productName: z.string(),
@@ -61,6 +85,7 @@ export const productRouter = createTRPCRouter({
         productWarrantyStatus: z.boolean(),
         productFrontImage: z.string(),
         productBackImage: z.string(),
+        productDistributor: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -77,6 +102,7 @@ export const productRouter = createTRPCRouter({
           warrantyStatus: input.productWarrantyStatus,
           frontImage: input.productFrontImage,
           backImage: input.productBackImage,
+          distributor: input.productDistributor,
         })
         .returning();
 
@@ -112,7 +138,7 @@ export const productRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        limit: z.number().int().min(1),
+        limit: z.number().int().min(1).max(10),
         category: z.string(),
       }),
     )
@@ -127,4 +153,89 @@ export const productRouter = createTRPCRouter({
 
       return relatedProducts;
     }),
+
+  listForStockAdmin: productManagerProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.query.product.findMany({
+      columns: {
+        id: true,
+        name: true,
+        model: true,
+        frontImage: true,
+        price: true,
+        quantityInStock: true,
+      },
+      orderBy: (p, { asc }) => [asc(p.serialNumber)],
+    });
+
+    return rows;
+  }),
+
+  updateStock: productManagerProcedure
+    .input(
+      z.object({
+        productId: z.string().uuid(),
+        quantityInStock: z.number().int().min(0),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(product)
+        .set({ quantityInStock: input.quantityInStock })
+        .where(eq(product.id, input.productId));
+
+      return { ok: true };
+    }),
+
+  deleteAdmin: productManagerProcedure
+    .input(z.object({ productId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.query.product.findFirst({
+        where: eq(product.id, input.productId),
+      });
+
+      if (!existing) {
+        throw new Error("Product not found");
+      }
+
+      await ctx.db.delete(product).where(eq(product.id, input.productId));
+      return { ok: true };
+    }),
+
+  createAdmin: productManagerProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        model: z.string().min(1),
+        category: z.string().min(1),
+        description: z.string().nullable().optional(),
+        distributor: z.string().nullable().optional(),
+        quantityInStock: z.number().int().min(0),
+        price: z.number().min(0),
+        warrantyStatus: z.boolean(),
+        frontImage: z.string().min(1),
+        backImage: z.string().min(1),
+      }),
+  )
+    .mutation(async ({ ctx, input }) => {
+      const newProduct = await ctx.db
+      .insert(product)
+      .values({
+        id: randomUUID(),
+        name: input.name,
+        model: input.model,
+        category: input.category,
+        description: input.description ?? null,
+        distributor: input.distributor ?? null,
+        quantityInStock: input.quantityInStock,
+        price: input.price.toFixed(2),
+        warrantyStatus: input.warrantyStatus,
+        frontImage: input.frontImage,
+        backImage: input.backImage,
+      })
+      .returning();
+
+    return newProduct[0];
+  }),
+
+
 });

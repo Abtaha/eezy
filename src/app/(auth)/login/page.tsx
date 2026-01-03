@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Input } from "@/components/ui/input";
 
-export default function LoginPage() {
+export default function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,11 +21,15 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg("");
 
+    const params = await searchParams;
+    const callbackUrl =
+      typeof params.callbackUrl === "string" ? params.callbackUrl : "/";
+
     const { error } = await authClient.signIn.email(
       { email, password },
       {
         onSuccess: () => {
-          router.push("/");
+          router.push(callbackUrl ?? "/");
         },
       },
     );
@@ -87,4 +95,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ShoppingCart, ShoppingBag } from "lucide-react";
 
@@ -16,59 +15,10 @@ import { CartComponent } from "@/components/cart-component";
 import { UserMenu } from "@/components/layout-components/user-menu";
 import { HeaderSearch } from "@/components/layout-components/header-search";
 
-type DropdownMenuProps = {
-  title: string;
-  href: string;
-  items: DropdownItem[];
-};
-
-type DropdownItem = {
-  href: string;
-  label: string;
-};
-
-const DropdownMenu = ({ title, href, items }: DropdownMenuProps) => (
-  <div className="group relative">
-    <Link
-      href={href}
-      className="flex items-center gap-1 transition-colors hover:text-blue-600"
-    >
-      {title}
-      <svg
-        className="h-4 w-4 transition-transform group-hover:rotate-180"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M19 9l-7 7-7-7"
-        ></path>
-      </svg>
-    </Link>
-
-    <div className="absolute top-full left-0 h-2 w-full opacity-0 group-hover:opacity-0" />
-
-    <div className="pointer-events-none invisible absolute top-[110%] left-1 w-[420px] translate-y-2 pt-2 opacity-0 transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg before:absolute before:-top-2 before:left-8 before:h-1.5 before:w-1.5 before:rotate-45 before:border-t before:border-l before:border-gray-200 before:bg-white before:shadow-lg before:content-['']">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-3 rounded-md px-4 py-3 transition-colors hover:bg-blue-50 hover:text-blue-600"
-          >
-            <span className="font-medium">{item.label}</span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+import { useCart } from "@/context/cart-context";
 
 export const Header = () => {
-
+  const { cart } = useCart();
   return (
     <header className="sticky top-0 z-50 bg-white shadow">
       {/* Logo and Brand Name */}
@@ -83,50 +33,6 @@ export const Header = () => {
           </span>
         </Link>
 
-        {/* Categories */}
-        <div className="hidden space-x-6 md:flex">
-          <DropdownMenu
-            title="Women"
-            href="/category/women"
-            items={[
-              { href: "/category/women/dresses", label: "Dresses" },
-              { href: "/category/women/tops", label: "Tops" },
-              { href: "/category/women/pants", label: "Pants" },
-              { href: "/category/women/skirts", label: "Skirts" },
-              { href: "/category/women/shoes", label: "Shoes" },
-              { href: "/category/women/bags", label: "Bags" },
-              { href: "/category/women/jewelry", label: "Jewelry" },
-              { href: "/category/women/accessories", label: "Accessories" },
-            ]}
-          />
-
-          <DropdownMenu
-            title="Men"
-            href="/category/men"
-            items={[
-              { href: "/category/men/shirts", label: "Shirts" },
-              { href: "/category/men/t-shirts", label: "T-Shirts" },
-              { href: "/category/men/pants", label: "Pants" },
-              { href: "/category/men/jackets", label: "Jackets" },
-              { href: "/category/men/shoes", label: "Shoes" },
-              { href: "/category/men/watches", label: "Watches" },
-              { href: "/category/men/belts", label: "Belts" },
-              { href: "/category/men/accessories", label: "Accessories" },
-            ]}
-          />
-
-          <DropdownMenu
-            title="Kids"
-            href="/category/kids"
-            items={[
-              { href: "/category/kids/t-shirts", label: "T-Shirts" },
-              { href: "/category/kids/pants", label: "Pants" },
-              { href: "/category/kids/jackets", label: "Jackets" },
-              { href: "/category/kids/shoes", label: "Shoes" },
-            ]}
-          />
-        </div>
-
         <div className="flex items-center space-x-3">
           {/* Search moved to its own component */}
           <HeaderSearch />
@@ -140,7 +46,15 @@ export const Header = () => {
                 aria-label="Open cart"
                 className="relative transition hover:text-blue-600"
               >
-                <ShoppingCart className="h-6 w-6" />
+                <div className="relative">
+                  <ShoppingCart className="h-6 w-6" />
+
+                  {cart.length > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                      {cart.length}
+                    </span>
+                  )}
+                </div>
               </button>
             </SheetTrigger>
 

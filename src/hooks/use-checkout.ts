@@ -1,0 +1,50 @@
+"use client";
+
+import { api } from "@/trpc/react";
+import { toast } from "sonner";
+import { useCart } from "@/context/cart-context";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+
+export function useCheckout() {
+  const { cart, clearCart } = useCart();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+
+  const createOrderMutation = api.order.create.useMutation();
+
+  const handleCheckout = async (
+    shippingAddress: string,
+    paymentMethod: string,
+  ) => {
+    if (!session && !isPending) {
+      router.push("/login");
+      return;
+    }
+
+    const items = cart.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity,
+    }));
+
+    if (items.length === 0) return;
+
+    try {
+      const order = await createOrderMutation.mutateAsync({
+        shippingAddress,
+        paymentMethod,
+        items,
+      });
+
+      toast.success(`Order created. ID: ${order.orderId}`);
+      clearCart();
+    } catch {
+      toast.error("Failed to create order.");
+    }
+  };
+
+  return {
+    handleCheckout,
+    isLoading: createOrderMutation.isPending || isPending,
+  };
+}

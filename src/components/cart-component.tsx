@@ -4,9 +4,14 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 import { useCart } from "@/context/cart-context";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
 export const CartComponent = () => {
   const { cart, removeItem, total } = useCart();
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
 
   return (
     <div className="mx-auto mt-10 max-w-2xl rounded-xl border p-6 shadow-md">
@@ -49,7 +54,16 @@ export const CartComponent = () => {
             </span>
           </div>
 
-          <Button className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800">
+          <Button
+            onClick={() => {
+              if (!session && !isPending) {
+                router.push("/login?callbackUrl=/checkout");
+              } else {
+                window.location.href = "/checkout";
+              }
+            }}
+            className="mt-4 w-full rounded-full bg-black text-white hover:bg-gray-800"
+          >
             Proceed to Checkout
           </Button>
         </div>
