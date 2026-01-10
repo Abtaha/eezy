@@ -28,14 +28,31 @@ export const CartComponent = () => {
             >
               <div>
                 <h3 className="font-medium text-gray-900">{item.name}</h3>
-                <p className="text-sm text-gray-600">
-                  ${item.price} × {item.quantity}
-                </p>
+                <div>
+                  <p className="text-sm text-gray-600">
+                    $
+                    {item.discount > 0
+                      ? (item.price * (1 - item.discount / 100)).toFixed(2)
+                      : item.price}{" "}
+                    × {item.quantity}
+                  </p>
+
+                  {item.discount > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {item.discount}% OFF
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-gray-900">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  $
+                  {(
+                    (item.discount > 0
+                      ? item.price * (1 - item.discount / 100)
+                      : item.price) * item.quantity
+                  ).toFixed(2)}
                 </span>
                 <button
                   onClick={() => removeItem(item.id)}
