@@ -225,6 +225,10 @@ export default function AdminInvoiceDetailPage() {
                     Discount: {it.discountPercent}%
                   </p>
                 )}
+
+                <p className="text-muted-foreground text-xs">
+                  Initial Cost: {money(it.productCost)}
+                </p>
               </div>
             </div>
           ))}
