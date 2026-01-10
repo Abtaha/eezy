@@ -24,6 +24,7 @@ type Product = {
   name: string;
   category: string;
   price: number;
+  discountPercentage: number;
   rating: number;
 };
 
@@ -94,6 +95,7 @@ export default function StorePage() {
           ? parseFloat(product.price)
           : Number(product.price),
       rating: product.rating,
+      discountPercentage: product.discountPercentage,
     }));
   }, [dbProducts]);
 

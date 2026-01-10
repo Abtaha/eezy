@@ -38,6 +38,7 @@ interface InvoiceProps {
     name: string;
     quantity: number;
     price: number;
+    discountPercent: number;
     subtotal: number;
   }>;
   total: number;
@@ -52,7 +53,7 @@ export const InvoiceTemplate = ({
 }: InvoiceProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      <Text style={styles.header}>INVOICE</Text>
+      <Text style={styles.header}>EEZY INVOICE</Text>
 
       <View style={styles.section}>
         <Text>Order ID: {orderId}</Text>
@@ -65,6 +66,7 @@ export const InvoiceTemplate = ({
           <Text style={styles.cellName}>Product</Text>
           <Text style={styles.cellQty}>Qty</Text>
           <Text style={styles.cellPrice}>Price</Text>
+          <Text style={styles.cellTotal}>Discount %</Text>
           <Text style={styles.cellTotal}>Total</Text>
         </View>
 
@@ -73,6 +75,9 @@ export const InvoiceTemplate = ({
             <Text style={styles.cellName}>{item.name}</Text>
             <Text style={styles.cellQty}>{item.quantity}</Text>
             <Text style={styles.cellPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.cellTotal}>
+              {item.discountPercent.toFixed(2)}%
+            </Text>
             <Text style={styles.cellTotal}>${item.subtotal.toFixed(2)}</Text>
           </View>
         ))}

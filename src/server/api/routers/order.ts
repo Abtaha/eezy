@@ -3,6 +3,7 @@
 import {
   createTRPCRouter,
   protectedProcedure,
+  salesManagerProcedure,
   productManagerProcedure,
 } from "@/server/api/trpc";
 import { z } from "zod";
@@ -67,7 +68,10 @@ export const orderRouter = createTRPCRouter({
           }
 
           // calculate total amount
-          const unitPrice = Number(product.price);
+          const unitPrice =
+            product.discountPercentage > 0
+              ? Number(product.price) * (1 - product.discountPercentage / 100)
+              : Number(product.price);
           totalAmount += unitPrice * item.quantity;
         }
 
@@ -96,13 +100,18 @@ export const orderRouter = createTRPCRouter({
         for (const item of input.items) {
           const p = productMap.get(item.productId)!;
           const unitPriceNumber = Number(p.price);
-          const subtotalNumber = unitPriceNumber * item.quantity;
+          const discountPercentNumber = Number(p.discountPercentage);
+          const subtotalNumber =
+            p.discountPercentage > 0
+              ? unitPriceNumber * (1 - discountPercentNumber / 100)
+              : unitPriceNumber * item.quantity;
 
           await tx.insert(orderItems).values({
             orderId: createdOrder.id,
             productId: item.productId,
             quantity: item.quantity,
             unitPrice: unitPriceNumber.toFixed(2),
+            discountPercent: discountPercentNumber.toFixed(2),
             subtotal: subtotalNumber.toFixed(2),
           });
 
@@ -171,6 +180,43 @@ export const orderRouter = createTRPCRouter({
     return allOrders;
   }),
 
+  getAllAdminSales: salesManagerProcedure.query(async ({ ctx }) => {
+    const allOrders = await ctx.db.query.orders.findMany({
+      orderBy: desc(orders.createdAt),
+      with: {
+        user: true,
+        orderItems: {
+          with: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    return allOrders.map((order) => ({
+      id: order.id,
+      userId: order.userId,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: order.paymentMethod,
+      trackingNumber: order.trackingNumber,
+      orderItems: order.orderItems.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountPercent: item.discountPercent,
+        subtotal: item.subtotal,
+        productCost: item.product.cost,
+        productName: item.product.name,
+        productImage: item.product.frontImage,
+      })),
+    }));
+  }),
+
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
@@ -209,19 +255,15 @@ export const orderRouter = createTRPCRouter({
       //find the order by ID
       const order = await ctx.db.query.orders.findFirst({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
-
-      //find the order items by order ID
-      const items = await ctx.db.query.orderItems.findMany({
-        where: eq(orderItems.orderId, input.orderId),
-        with: {
-          product: true,
-        },
-      });
 
       return {
         orderId: order.id,
@@ -232,18 +274,58 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items.map((item) => ({
+        orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
           productName: item.product.name,
           productImage: item.product.frontImage,
         })),
       };
     }),
 
+  getByIdAdminSales: salesManagerProcedure
+    .input(z.object({ orderId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // find the order by ID
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      return {
+        orderId: order.id,
+        user: order.user,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod,
+        trackingNumber: order.trackingNumber,
+        orderItems: order.orderItems.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountPercent: item.discountPercent,
+          subtotal: item.subtotal,
+          productCost: item.product.cost,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
+      };
+    }),
 
   getByIdAdmin: productManagerProcedure
     .input(z.object({ orderId: z.string().uuid() }))
@@ -251,23 +333,19 @@ export const orderRouter = createTRPCRouter({
       // find the order by ID
       const order = await ctx.db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
 
-      // find the order items by order ID
-      const items = await ctx.db.query.orderItems.findMany({
-        where: eq(orderItems.orderId, input.orderId),
-        with: {
-          product: true,
-        },
-      });
-
       return {
         orderId: order.id,
-        userId: order.userId, // admin needs to know whose order it is
+        user: order.user,
         status: order.status,
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
@@ -275,16 +353,16 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items.map((item) => ({
+        orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          discountPercent: item.discountPercent,
           subtotal: item.subtotal,
           productName: item.product.name,
           productImage: item.product.frontImage,
         })),
       };
     }),
-
 });

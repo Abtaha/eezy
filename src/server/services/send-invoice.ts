@@ -33,6 +33,7 @@ export async function processDelivery(orderId: string) {
         name: item.product.name ?? "Unknown Product",
         quantity: item.quantity,
         price: Number(item.unitPrice) || 0,
+        discountPercent: Number(item.discountPercent) || 0,
         subtotal: Number(item.subtotal) || 0,
       })),
     };
@@ -42,7 +43,6 @@ export async function processDelivery(orderId: string) {
     );
 
     await resendService.sendEmailWithAttachment({
-      from: "eezy@resend.dev",
       to: orderData.user.email,
       subject: `Order Confirmation #${orderData.id}`,
       html: `
