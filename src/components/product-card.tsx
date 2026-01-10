@@ -11,6 +11,7 @@ interface ProductCardProps {
   name: string;
   category: string;
   price: number;
+  discountPercentage: number;
   rating: number;
 }
 
@@ -21,9 +22,13 @@ export default function ProductCard({
   name,
   category,
   price,
+  discountPercentage,
   rating,
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = React.useState(false);
+
+  const finalPrice =
+    discountPercentage > 0 ? price * (1 - discountPercentage / 100) : price;
 
   return (
     <Link href={`/product/${id}`}>
@@ -46,9 +51,27 @@ export default function ProductCard({
 
         <p className="mb-2 text-sm text-gray-600">{category}</p>
 
-        <p className="mb-2 text-xl font-bold text-gray-900">
-          ${price.toFixed(2)}
-        </p>
+        <div className="mb-6 flex flex-col gap-1">
+          {discountPercentage > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 line-through">
+                ${price.toFixed(2)}
+              </span>
+
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                {discountPercentage}% OFF
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-bold tracking-tight text-gray-900">
+              ${finalPrice.toFixed(2)}
+            </span>
+
+            <span className="pb-1 text-sm text-gray-500">USD</span>
+          </div>
+        </div>
 
         <div className="flex items-center">
           {Array.from({ length: 5 }).map((_, index) => (
@@ -62,4 +85,3 @@ export default function ProductCard({
     </Link>
   );
 }
-

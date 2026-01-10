@@ -30,7 +30,7 @@ export default async function AppLayout({
     !session?.user ||
     !(
       session.user.role === "salesManager" ||
-      session.user.role === "supportManager" ||
+      session.user.role === "supportAgent" ||
       session.user.role === "productManager"
     )
   ) {
@@ -39,7 +39,7 @@ export default async function AppLayout({
 
   return (
     <div className={geist.variable}>
-      <div className="min-h-screen flex flex-col bg-background">
+      <div className="bg-background flex min-h-screen flex-col">
         <AdminHeader />
         <div className="flex-1">{children}</div>
       </div>

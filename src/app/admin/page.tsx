@@ -10,7 +10,7 @@ export default async function AdminPage() {
   if (session?.user) {
     if (session.user.role === "salesManager") {
       redirect("/admin/sales");
-    } else if (session.user.role === "supportManager") {
+    } else if (session.user.role === "supportAgent") {
       redirect("/admin/support");
     } else if (session.user.role === "productManager") {
       redirect("/admin/product");
