@@ -57,11 +57,11 @@ type SortKey = "createdAt_desc" | "createdAt_asc";
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-5)",
   },
   profit: {
     label: "Profit",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
 
@@ -345,8 +345,8 @@ export default function ManageInvoicesPage() {
                     style={{ textDecoration: "none" }}
                   >
                     {({ loading }) => (
-                      <Button variant="ghost" size="sm" className="h-8">
-                        {loading ? "..." : "PDF"}
+                      <Button size="sm" className="h-8">
+                        {loading ? "..." : "Download PDF"}
                       </Button>
                     )}
                   </PDFDownloadLink>
