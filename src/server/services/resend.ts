@@ -19,7 +19,7 @@ class ResendService {
   }) {
     try {
       const response = await this.resend.emails.send({
-        from: "eezy@resend.dev",
+        from: "eezy@abtahafarooq.com",
         to,
         subject,
         html,
@@ -37,7 +37,6 @@ class ResendService {
     html,
     attachments,
   }: {
-    from: string;
     to: string;
     subject: string;
     html: string;
@@ -49,7 +48,7 @@ class ResendService {
   }) {
     try {
       const response = await this.resend.emails.send({
-        from: "eezy@resend.dev",
+        from: "eezy@abtahafarooq.com",
         to,
         subject,
         html,

@@ -13,13 +13,20 @@ import {
 
 import { relations } from "drizzle-orm";
 
+export const userRoleEnum = pgEnum("user_role", [
+  "user",
+  "salesManager",
+  "supportAgent",
+  "productManager",
+]);
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
-  role: text("role").default("user").notNull(),
+  role: userRoleEnum("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -93,11 +100,13 @@ export const product = pgTable("product", {
   category: text("category").notNull(),
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }).notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
   distributor: text("distributor"),
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  discountPercentage: integer("discount_percentage").default(0).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -203,6 +212,12 @@ export const orderItems = pgTable("order_items", {
 
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discountPercent: numeric("discount_percent", {
+    precision: 10,
+    scale: 2,
+  })
+    .default("0")
+    .notNull(),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -278,6 +293,37 @@ export const refunds = pgTable("refunds", {
     .notNull(),
 });
 
+export const wishlist = pgTable("wishlist", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const wishlistItem = pgTable(
+  "wishlist_item",
+  {
+    id: serial("id").primaryKey(),
+    wishlistId: integer("wishlist_id")
+      .notNull()
+      .references(() => wishlist.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("wishlist_item_wishlist_idx").on(table.wishlistId),
+    index("wishlist_item_product_idx").on(table.productId),
+  ],
+);
+
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart, {
     fields: [user.id],
@@ -288,6 +334,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   ratings: many(ratings),
   sessions: many(session),
   accounts: many(account),
+  wishlists: one(wishlist),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -317,6 +364,7 @@ export const productRelations = relations(product, ({ many }) => ({
   orderItems: many(orderItems),
   comments: many(comments),
   ratings: many(ratings),
+  wishlistItems: many(wishlistItem),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
@@ -411,5 +459,24 @@ export const messageRelations = relations(message, ({ one }) => ({
   conversation: one(conversation, {
     fields: [message.conversationId],
     references: [conversation.id],
+  }),
+}));
+
+export const wishlistRelations = relations(wishlist, ({ one, many }) => ({
+  user: one(user, {
+    fields: [wishlist.userId],
+    references: [user.id],
+  }),
+  items: many(wishlistItem),
+}));
+
+export const wishlistItemRelations = relations(wishlistItem, ({ one }) => ({
+  wishlist: one(wishlist, {
+    fields: [wishlistItem.wishlistId],
+    references: [wishlist.id],
+  }),
+  product: one(product, {
+    fields: [wishlistItem.productId],
+    references: [product.id],
   }),
 }));

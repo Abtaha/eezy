@@ -129,10 +129,7 @@ export default function CheckoutPage() {
       toast.success(`Order placed successfully! 🎉`);
       clearCart();
 
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
+      router.push("/orders");
     } catch {
       toast.error("Failed to place order.");
     }
@@ -180,7 +177,12 @@ export default function CheckoutPage() {
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.name}</h3>
                     <p className="text-sm text-gray-600">
-                      ${item.price.toFixed(2)} each
+                      $
+                      {(item.discount > 0
+                        ? item.price * (1 - item.discount / 100)
+                        : item.price
+                      ).toFixed(2)}{" "}
+                      each
                     </p>
                   </div>
 
@@ -212,7 +214,12 @@ export default function CheckoutPage() {
                   {/* Item Total */}
                   <div className="flex items-center gap-4">
                     <span className="w-20 text-right font-semibold text-gray-900">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      $
+                      {(
+                        (item.discount > 0
+                          ? item.price * (1 - item.discount / 100)
+                          : item.price) * item.quantity
+                      ).toFixed(2)}
                     </span>
 
                     <Button
