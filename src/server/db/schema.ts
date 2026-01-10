@@ -100,6 +100,7 @@ export const product = pgTable("product", {
   category: text("category").notNull(),
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }).notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
   distributor: text("distributor"),
   description: text("description"),

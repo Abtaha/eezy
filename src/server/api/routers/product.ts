@@ -80,33 +80,35 @@ export const productRouter = createTRPCRouter({
   create: productManagerProcedure
     .input(
       z.object({
-        productName: z.string(),
-        productModel: z.string(),
-        productDescription: z.string().optional() ?? "", //empty string if no description provided
-        productQuantityInStock: z.number().int().nonnegative(), //ensure non-negative integer for stock quantity
-        productCategory: z.string(),
-        productPrice: z.number().int().max(9999999999), // to ensure a maximum of 10 digits as in the product schema
-        productWarrantyStatus: z.boolean(),
-        productFrontImage: z.string(),
-        productBackImage: z.string(),
-        productDistributor: z.string(),
+        name: z.string().min(1),
+        model: z.string().min(1),
+        category: z.string().min(1),
+        description: z.string().nullable().optional(),
+        distributor: z.string().nullable().optional(),
+        quantityInStock: z.number().int().min(0),
+        cost: z.number().min(0).optional(),
+        price: z.number().min(0),
+        warrantyStatus: z.boolean(),
+        frontImage: z.string().min(1),
+        backImage: z.string().min(1),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const newProduct = await ctx.db
         .insert(product)
         .values({
-          id: randomUUID(), //generate a new uuid for the product
-          name: input.productName,
-          model: input.productModel,
-          description: input.productDescription,
-          category: input.productCategory,
-          quantityInStock: input.productQuantityInStock,
-          price: (input.productPrice * 0.01).toFixed(2), //convert to string in 2-digits-after-decimal format
-          warrantyStatus: input.productWarrantyStatus,
-          frontImage: input.productFrontImage,
-          backImage: input.productBackImage,
-          distributor: input.productDistributor,
+          id: randomUUID(),
+          name: input.name,
+          model: input.model,
+          category: input.category,
+          cost: (input.cost ?? input.price / 2).toFixed(2),
+          description: input.description ?? null,
+          distributor: input.distributor ?? null,
+          quantityInStock: input.quantityInStock,
+          price: input.price.toFixed(2),
+          warrantyStatus: input.warrantyStatus,
+          frontImage: input.frontImage,
+          backImage: input.backImage,
         })
         .returning();
 
@@ -259,6 +261,7 @@ export const productRouter = createTRPCRouter({
         description: z.string().nullable().optional(),
         distributor: z.string().nullable().optional(),
         quantityInStock: z.number().int().min(0),
+        cost: z.number().min(0).optional(),
         price: z.number().min(0),
         warrantyStatus: z.boolean(),
         frontImage: z.string().min(1),
@@ -273,6 +276,7 @@ export const productRouter = createTRPCRouter({
           name: input.name,
           model: input.model,
           category: input.category,
+          cost: (input.cost ?? input.price / 2).toFixed(2),
           description: input.description ?? null,
           distributor: input.distributor ?? null,
           quantityInStock: input.quantityInStock,
