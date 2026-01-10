@@ -217,19 +217,15 @@ export const orderRouter = createTRPCRouter({
       //find the order by ID
       const order = await ctx.db.query.orders.findFirst({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
-
-      //find the order items by order ID
-      const items = await ctx.db.query.orderItems.findMany({
-        where: eq(orderItems.orderId, input.orderId),
-        with: {
-          product: true,
-        },
-      });
 
       return {
         orderId: order.id,
@@ -240,7 +236,7 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items.map((item) => ({
+        orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
