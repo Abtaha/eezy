@@ -72,7 +72,7 @@ export default function AdminInvoiceDetailPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-x-4">
           <PDFDownloadLink
             document={
               <InvoiceTemplate
