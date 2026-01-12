@@ -12,7 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import type { badgeVariants } from "@/components/ui/badge";
 import type { VariantProps } from "class-variance-authority";
 
-export type OrderStatus = "processing" | "in_transit" | "delivered";
+export type OrderStatus =
+  | "processing"
+  | "in_transit"
+  | "delivered"
+  | "cancelled";
 
 export type Order = {
   id: string;
@@ -50,6 +54,8 @@ function statusVariant(status: OrderStatus): BadgeVariant {
       return "default";
     case "delivered":
       return "default";
+    case "cancelled":
+      return "destructive";
   }
 }
 
