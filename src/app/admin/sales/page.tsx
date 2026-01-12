@@ -31,6 +31,17 @@ export default function SalesManagerPage() {
             </CardContent>
           </Link>
         </Card>
+
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/sales/refunds" className="block h-full">
+            <CardHeader>
+              <CardTitle>Refunds</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm">
+              Refund Requests.
+            </CardContent>
+          </Link>
+        </Card>
       </div>
     </div>
   );

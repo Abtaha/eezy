@@ -39,7 +39,7 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -51,7 +51,7 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -80,7 +80,7 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("account_userId_idx").on(table.userId)],
@@ -96,7 +96,7 @@ export const verification = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
@@ -119,7 +119,7 @@ export const product = pgTable("product", {
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -188,6 +188,7 @@ export const orderStatusEnum = pgEnum("order_status", [
   "processing",
   "in_transit",
   "delivered",
+  "cancelled",
 ]);
 
 // order table
@@ -291,10 +292,12 @@ export const attachments = pgTable("attachments", {
 });
 
 // status for refund
+// UPDATED: Added "refunded" here to match your later definition
 export const refundStatusEnum = pgEnum("refund_status", [
   "pending",
   "approved",
   "rejected",
+  "refunded",
 ]);
 
 // refunds table
@@ -347,6 +350,8 @@ export const wishlistItem = pgTable(
     index("wishlist_item_product_idx").on(table.productId),
   ],
 );
+
+// RELATIONS ------------------------------------------------------------------
 
 export const userRelations = relations(user, ({ one, many }) => ({
   cart: one(cart, {
@@ -422,7 +427,7 @@ export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
   refunds: many(refunds),
 }));
 
-// relations for commets
+// relations for comments
 export const commentsRelations = relations(comments, ({ one }) => ({
   user: one(user, {
     fields: [comments.userId],
