@@ -20,13 +20,22 @@ export const userRoleEnum = pgEnum("user_role", [
   "productManager",
 ]);
 
+function generateTaxID() {
+  return `TX-${Math.floor(1000000 + Math.random() * 9000000)}`;
+}
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  taxID: text("tax_id")
+    .notNull()
+    .unique()
+    .$defaultFn(() => generateTaxID()),
   role: userRoleEnum("role").default("user").notNull(),
+  homeAddress: text("home_address").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
