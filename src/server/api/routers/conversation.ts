@@ -288,6 +288,7 @@ export const conversationRouter = createTRPCRouter({
               orderItems: {
                 with: {
                   product: true,
+                  refunds: true,
                 },
               },
             },
@@ -321,6 +322,20 @@ export const conversationRouter = createTRPCRouter({
 
       if (!conv) return null;
       return conv;
+    }),
+
+  isUserAttached: supportAgentProcedure
+    .input(z.object({ conversationId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const conv = await ctx.db.query.conversation.findFirst({
+        where: (c) => eq(c.id, input.conversationId),
+        columns: {
+          userId: true,
+        },
+      });
+
+      if (!conv) return null;
+      return conv.userId !== null ? true : false;
     }),
 
   close: supportAgentProcedure

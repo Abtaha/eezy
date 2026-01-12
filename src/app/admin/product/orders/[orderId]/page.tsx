@@ -17,7 +17,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type OrderStatus = "processing" | "in_transit" | "delivered";
+type OrderStatus = "processing" | "in_transit" | "delivered" | "cancelled";
 
 function formatTR(date: string | Date) {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -111,6 +111,7 @@ export default function AdminOrderDetailPage() {
                   status: value,
                 })
               }
+              disabled={data.status === "cancelled"}
             >
               <SelectTrigger className="h-8 w-36 text-xs">
                 <SelectValue />
@@ -119,6 +120,7 @@ export default function AdminOrderDetailPage() {
                 <SelectItem value="processing">Processing</SelectItem>
                 <SelectItem value="in_transit">In transit</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
@@ -197,45 +199,61 @@ export default function AdminOrderDetailPage() {
         </CardHeader>
 
         <CardContent className="space-y-2">
-          {data.orderItems.map((it) => (
-            <div
-              key={it.id}
-              className="flex items-center justify-between gap-4 rounded-md border p-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-muted/30 relative h-12 w-12 overflow-hidden rounded-md border">
-                  {it.productImage && (
-                    <Image
-                      src={it.productImage}
-                      alt={it.productName}
-                      fill
-                      className="object-cover"
-                    />
+          {data.orderItems.map((it) => {
+            return (
+              <div
+                key={it.id}
+                className="flex items-center justify-between gap-4 rounded-md border p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-muted/30 relative h-12 w-12 overflow-hidden rounded-md border">
+                    {it.productImage && (
+                      <Image
+                        src={it.productImage}
+                        alt={it.productName}
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{it.productName}</p>
+
+                      {/* REFUND BADGE */}
+                      {(it.refundStatus === "approved" ||
+                        it.refundStatus === "refunded") && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${"bg-green-100 text-green-700"}`}
+                        >
+                          {it.refundStatus === "approved"
+                            ? "Refund Approved"
+                            : "Refunded"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Quantity: {it.quantity}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{money(it.subtotal)}</p>
+                  <p className="text-muted-foreground text-xs">
+                    Unit: {money(it.unitPrice)}
+                  </p>
+
+                  {parseFloat(it.discountPercent) > 0 && (
+                    <p className="text-muted-foreground text-xs">
+                      Discount: {it.discountPercent}%
+                    </p>
                   )}
                 </div>
-
-                <div>
-                  <p className="text-sm font-medium">{it.productName}</p>
-                  <p className="text-muted-foreground text-xs">
-                    Quantity: {it.quantity}
-                  </p>
-                </div>
               </div>
-
-              <div className="text-right">
-                <p className="text-sm font-medium">{money(it.subtotal)}</p>
-                <p className="text-muted-foreground text-xs">
-                  Unit: {money(it.unitPrice)}
-                </p>
-
-                {parseFloat(it.discountPercent) > 0 && (
-                  <p className="text-muted-foreground text-xs">
-                    Discount: {it.discountPercent}%
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
     </div>

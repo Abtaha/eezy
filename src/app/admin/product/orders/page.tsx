@@ -15,7 +15,7 @@ import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { TRPCClientError } from "@trpc/client";
 
-type OrderStatus = "processing" | "in_transit" | "delivered";
+type OrderStatus = "processing" | "in_transit" | "delivered" | "cancelled";
 
 type Order = {
   id: string;
@@ -152,7 +152,7 @@ export default function OrdersPage() {
                   if (e.key === "Enter") goToOrder(order.id);
                 }}
                 tabIndex={0}
-                className="border-t cursor-pointer outline-none transition-colors hover:bg-muted/40 focus:bg-muted/40"
+                className="hover:bg-muted/40 focus:bg-muted/40 cursor-pointer border-t transition-colors outline-none"
               >
                 <td className="px-4 py-2 font-mono text-xs">{order.id}</td>
                 <td className="px-4 py-2">{order.userId}</td>
@@ -171,6 +171,7 @@ export default function OrdersPage() {
                     onValueChange={(value: OrderStatus) =>
                       updateStatus(order.id, value)
                     }
+                    disabled={order.status === "cancelled"}
                   >
                     <SelectTrigger
                       className="h-8 w-32 text-xs"
@@ -187,6 +188,7 @@ export default function OrdersPage() {
                       <SelectItem value="processing">Processing</SelectItem>
                       <SelectItem value="in_transit">In transit</SelectItem>
                       <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </td>

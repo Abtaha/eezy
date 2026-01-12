@@ -207,7 +207,21 @@ export default function AdminInvoiceDetailPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium">{it.productName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{it.productName}</p>
+
+                    {/* REFUND BADGE */}
+                    {(it.refundStatus === "approved" ||
+                      it.refundStatus === "refunded") && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${"bg-green-100 text-green-700"}`}
+                      >
+                        {it.refundStatus === "approved"
+                          ? "Refund Approved"
+                          : "Refunded"}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-muted-foreground text-xs">
                     Quantity: {it.quantity}
                   </p>

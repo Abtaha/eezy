@@ -7,6 +7,7 @@ import Sidebar from "@/components/admin/sidebar";
 const items = [
   { href: "/admin/sales/discount", label: "Discounts" },
   { href: "/admin/sales/invoices", label: "Invoices" },
+  { href: "/admin/sales/refunds", label: "Refunds" },
 ];
 
 export default async function SalesAdminLayout({

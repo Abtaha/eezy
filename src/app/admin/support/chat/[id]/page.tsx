@@ -30,6 +30,12 @@ export default function AgentChatPage() {
       { enabled: typeof conversationId === "string" },
     );
 
+  const { data: isUserAttached, isLoading: isUserLoading } =
+    api.conversation.isUserAttached.useQuery(
+      { conversationId },
+      { enabled: typeof conversationId === "string" },
+    );
+
   const sendMessage = api.conversation.sendMessage.useMutation({
     onSuccess: () => {
       void utils.conversation.getMessages.invalidate({ conversationId });
@@ -88,16 +94,22 @@ export default function AgentChatPage() {
         </div>
 
         <div className="flex flex-row items-center gap-2">
-          <Button size="sm" className="gap-2" asChild>
-            <Link
-              href={`/admin/support/chat/${conversationId}/user`}
-              target="_blank"
-              className="flex items-center gap-2"
-            >
-              <User className="h-4 w-4" />
-              <span>View User Info</span>
-            </Link>
-          </Button>
+          {isUserLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
+          ) : isUserAttached ? (
+            <Button size="sm" className="gap-2" asChild>
+              <Link
+                href={`/admin/support/chat/${conversationId}/user`}
+                target="_blank"
+                className="flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                <span>View User Info</span>
+              </Link>
+            </Button>
+          ) : null}
 
           <Button
             variant="destructive"
