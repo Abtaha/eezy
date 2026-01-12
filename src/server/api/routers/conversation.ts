@@ -1,11 +1,10 @@
 import { z } from "zod";
 import {
   createTRPCRouter,
-  protectedProcedure,
   publicProcedure,
   supportAgentProcedure,
 } from "@/server/api/trpc";
-import { conversation, message } from "@/server/db/schema";
+import { conversation, message, attachments } from "@/server/db/schema"; // Import attachments
 import { lt, or, eq, and, isNull, desc } from "drizzle-orm";
 import ablyService from "@/server/services/ably";
 
@@ -26,17 +25,29 @@ async function assertConversationAccess({
   });
 
   if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
-  if (conv.status === "closed") throw new TRPCError({ code: "FORBIDDEN" });
 
   const user = ctx.session?.user;
+  const currentSessionId = ctx.session?.session?.id;
 
   if (user?.role === "supportAgent") {
-    if (conv.agentId !== user.id) throw new TRPCError({ code: "FORBIDDEN" });
-  } else if (user) {
-    if (conv.userId !== user.id) throw new TRPCError({ code: "FORBIDDEN" });
-  } else {
-    if (conv.sessionId !== ctx?.session?.session.id)
-      throw new TRPCError({ code: "FORBIDDEN" });
+    if (conv.agentId !== user.id && conv.agentId !== null) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Conversation assigned to another agent",
+      });
+    }
+    return conv;
+  }
+
+  if (user) {
+    if (conv.userId === user.id) return conv;
+    if (currentSessionId && conv.sessionId === currentSessionId) return conv;
+  }
+
+  if (conv.sessionId) {
+    if (conv.sessionId !== currentSessionId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Session mismatch" });
+    }
   }
 
   return conv;
@@ -78,6 +89,17 @@ export const conversationRouter = createTRPCRouter({
           eq(c.status, "open"),
           or(eq(c.agentId, user.id), isNull(c.agentId)),
         ),
+      with: {
+        user: true,
+        agent: true,
+        // We probably don't need full message history in a list view,
+        // but if you do, ensure you fetch attachments too:
+        messages: {
+          with: { attachments: true },
+          limit: 1, // Example: get only last message
+          orderBy: (m) => desc(m.createdAt),
+        },
+      },
       orderBy: (c) => desc(c.updatedAt),
     });
   }),
@@ -125,7 +147,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string().uuid(),
-        cursor: z.string().uuid().optional(), // for pagination
+        cursor: z.string().uuid().optional(),
         limit: z.number().min(1).max(50).default(20),
       }),
     )
@@ -142,11 +164,14 @@ export const conversationRouter = createTRPCRouter({
             input.cursor ? lt(m.id, input.cursor) : undefined,
           ),
         orderBy: (m) => desc(m.createdAt),
+        with: {
+          attachments: true, // UPDATED: Fetch the new relation
+        },
         limit: input.limit,
       });
 
       return {
-        items: messages.reverse(), // oldest → newest for UI
+        items: messages.reverse(),
         nextCursor: messages.at(-1)?.id ?? null,
       };
     }),
@@ -157,11 +182,22 @@ export const conversationRouter = createTRPCRouter({
         .object({
           conversationId: z.string().uuid(),
           content: z.string().optional(),
-          fileUrl: z.string().optional(),
-          fileType: z.string().optional(),
+          // UPDATED: Input now accepts an array of files with metadata
+          files: z
+            .array(
+              z.object({
+                url: z.string().url(),
+                type: z.string().optional(),
+                name: z.string().optional(),
+                size: z.number().optional(),
+              }),
+            )
+            .max(5, "Maximum 5 files per message")
+            .optional()
+            .default([]),
         })
-        .refine((v) => v.content || (v.fileUrl && v.fileType), {
-          message: "Message must have content or a file",
+        .refine((v) => v.content || v.files.length > 0, {
+          message: "Message must have content or at least one file",
         }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -174,20 +210,117 @@ export const conversationRouter = createTRPCRouter({
 
       const senderType = user?.role === "supportAgent" ? "agent" : "user";
 
-      const [msg] = await ctx.db
-        .insert(message)
-        .values({
-          conversationId: conv.id,
-          senderType,
-          content: input.content,
-          fileUrl: input.fileUrl,
-          fileType: input.fileType,
-        })
-        .returning();
+      return await ctx.db.transaction(async (tx) => {
+        const [newMessage] = await tx
+          .insert(message)
+          .values({
+            conversationId: conv.id,
+            senderType,
+            content: input.content,
+          })
+          .returning();
 
-      await ablyService.publish(`conversation:${conv.id}`, "message.new", msg);
+        if (!newMessage) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      return msg;
+        let insertedAttachments: (typeof attachments.$inferSelect)[] = [];
+
+        if (input.files.length > 0) {
+          insertedAttachments = await tx
+            .insert(attachments)
+            .values(
+              input.files.map((file) => ({
+                messageId: newMessage.id, // Link to the new message
+                url: file.url,
+                type: file.type,
+                name: file.name,
+                size: file.size,
+              })),
+            )
+            .returning();
+        }
+
+        // 3. Combine them for the return value & Ably
+        const fullMessagePayload = {
+          ...newMessage,
+          attachments: insertedAttachments,
+        };
+
+        await ablyService.publish(
+          `conversation:${conv.id}`,
+          "message.new",
+          fullMessagePayload,
+        );
+
+        return fullMessagePayload;
+      });
+    }),
+
+  getChatUserDetails: supportAgentProcedure
+    .input(z.object({ conversationId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // 1. Get the User ID from the conversation
+      const conv = await ctx.db.query.conversation.findFirst({
+        where: (c) => eq(c.id, input.conversationId),
+        columns: { userId: true },
+      });
+
+      if (!conv || !conv.userId) return null;
+
+      // 2. Fetch EVERYTHING about the user
+      const userDetails = await ctx.db.query.user.findFirst({
+        where: (u) => eq(u.id, conv.userId!),
+        with: {
+          // A. Active Cart
+          cart: {
+            with: {
+              items: {
+                orderBy: (ci) => desc(ci.addedAt),
+                with: {
+                  product: true,
+                },
+              },
+            },
+          },
+          // B. Order History (Deep nested fetch)
+          orders: {
+            orderBy: (o) => desc(o.createdAt),
+            with: {
+              orderItems: {
+                with: {
+                  product: true,
+                },
+              },
+            },
+          },
+          // C. Wishlist
+          wishlists: {
+            with: {
+              items: {
+                orderBy: (wi) => desc(wi.addedAt),
+                with: {
+                  product: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return userDetails;
+    }),
+
+  getStatus: publicProcedure
+    .input(z.object({ conversationId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const conv = await ctx.db.query.conversation.findFirst({
+        where: (c) => eq(c.id, input.conversationId),
+        columns: {
+          status: true,
+        },
+      });
+
+      if (!conv) return null;
+      return conv;
     }),
 
   close: supportAgentProcedure

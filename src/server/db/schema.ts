@@ -261,8 +261,23 @@ export const message = pgTable("messages", {
     .references(() => conversation.id, { onDelete: "cascade" }),
   senderType: senderTypeEnum("sender_type").notNull(),
   content: text("content"),
-  fileUrl: text("file_url"),
-  fileType: text("file_type"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const attachments = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+
+  // Link the file to a specific message
+  messageId: uuid("message_id")
+    .references(() => message.id, { onDelete: "cascade" }) // If message deletes, files delete
+    .notNull(),
+
+  url: text("url").notNull(), // S3 or Uploadthing URL
+  name: text("name"),
+  type: text("type"),
+  size: integer("size"), // File size in bytes (optional, useful for UI)
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -455,10 +470,19 @@ export const conversationRelations = relations(
 );
 
 // relations for message
-export const messageRelations = relations(message, ({ one }) => ({
+export const messageRelations = relations(message, ({ one, many }) => ({
   conversation: one(conversation, {
     fields: [message.conversationId],
     references: [conversation.id],
+  }),
+  attachments: many(attachments),
+}));
+
+// An attachment belongs to ONE message
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  message: one(message, {
+    fields: [attachments.messageId],
+    references: [message.id],
   }),
 }));
 
