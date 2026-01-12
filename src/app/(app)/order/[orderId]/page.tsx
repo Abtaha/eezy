@@ -82,8 +82,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <thead className="bg-muted/50 text-xs">
               <tr>
                 <th className="px-4 py-2 text-left font-medium">Product</th>
+<<<<<<< HEAD
                 <th className="px-4 py-2 text-right font-medium">Qty</th>
                 <th className="px-4 py-2 text-right font-medium">Unit</th>
+=======
+                <th className="px-4 py-2 text-right font-medium">Quantity</th>
+                <th className="px-4 py-2 text-right font-medium">Unit price</th>
+                <th className="px-4 py-2 text-right font-medium">Discount %</th>
+>>>>>>> main
                 <th className="px-4 py-2 text-right font-medium">Subtotal</th>
                 <th className="px-4 py-2 text-right font-medium"></th>
               </tr>
@@ -108,6 +114,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   <td className="px-4 py-2 text-right">{item.quantity}</td>
                   <td className="px-4 py-2 text-right">
                     {formatCurrency(parseFloat(item.unitPrice))}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {item.discountPercent}%
                   </td>
                   <td className="px-4 py-2 text-right">
                     {formatCurrency(parseFloat(item.subtotal))}

@@ -4,7 +4,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   productManagerProcedure,
-  salesManagerProcedure
+  salesManagerProcedure,
 } from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
@@ -69,7 +69,10 @@ export const orderRouter = createTRPCRouter({
           }
 
           // calculate total amount
-          const unitPrice = Number(product.price);
+          const unitPrice =
+            product.discountPercentage > 0
+              ? Number(product.price) * (1 - product.discountPercentage / 100)
+              : Number(product.price);
           totalAmount += unitPrice * item.quantity;
         }
 
@@ -98,13 +101,18 @@ export const orderRouter = createTRPCRouter({
         for (const item of input.items) {
           const p = productMap.get(item.productId)!;
           const unitPriceNumber = Number(p.price);
-          const subtotalNumber = unitPriceNumber * item.quantity;
+          const discountPercentNumber = Number(p.discountPercentage);
+          const subtotalNumber =
+            p.discountPercentage > 0
+              ? unitPriceNumber * (1 - discountPercentNumber / 100)
+              : unitPriceNumber * item.quantity;
 
           await tx.insert(orderItems).values({
             orderId: createdOrder.id,
             productId: item.productId,
             quantity: item.quantity,
             unitPrice: unitPriceNumber.toFixed(2),
+            discountPercent: discountPercentNumber.toFixed(2),
             subtotal: subtotalNumber.toFixed(2),
           });
 
@@ -173,6 +181,43 @@ export const orderRouter = createTRPCRouter({
     return allOrders;
   }),
 
+  getAllAdminSales: salesManagerProcedure.query(async ({ ctx }) => {
+    const allOrders = await ctx.db.query.orders.findMany({
+      orderBy: desc(orders.createdAt),
+      with: {
+        user: true,
+        orderItems: {
+          with: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    return allOrders.map((order) => ({
+      id: order.id,
+      userId: order.userId,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      shippingAddress: order.shippingAddress,
+      paymentMethod: order.paymentMethod,
+      trackingNumber: order.trackingNumber,
+      orderItems: order.orderItems.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountPercent: item.discountPercent,
+        subtotal: item.subtotal,
+        productCost: item.product.cost,
+        productName: item.product.name,
+        productImage: item.product.frontImage,
+      })),
+    }));
+  }),
+
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
@@ -211,6 +256,10 @@ export const orderRouter = createTRPCRouter({
       //find the order by ID
       const order = await ctx.db.query.orders.findFirst({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order) {
@@ -227,18 +276,19 @@ export const orderRouter = createTRPCRouter({
 
       const itemIds = items.map((i) => i.id);
       const refundRows =
-      itemIds.length === 0
-        ? []
-        : await ctx.db.query.refunds.findMany({
-            where: inArray(refunds.orderItemId, itemIds),
-            columns: {
-              orderItemId: true,
-              status: true,
-            },
-          });
+        itemIds.length === 0
+          ? []
+          : await ctx.db.query.refunds.findMany({
+              where: inArray(refunds.orderItemId, itemIds),
+              columns: {
+                orderItemId: true,
+                status: true,
+              },
+            });
 
-      const refundMap = new Map(refundRows.map((r) => [r.orderItemId, r.status]));
-
+      const refundMap = new Map(
+        refundRows.map((r) => [r.orderItemId, r.status]),
+      );
 
       return {
         orderId: order.id,
@@ -249,12 +299,13 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items.map((item) => ({
+        orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           subtotal: item.subtotal,
+          discountPercent: item.discountPercent,
           productName: item.product.name,
           productImage: item.product.frontImage,
 
@@ -263,6 +314,45 @@ export const orderRouter = createTRPCRouter({
       };
     }),
 
+  getByIdAdminSales: salesManagerProcedure
+    .input(z.object({ orderId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // find the order by ID
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
+      });
+
+      if (!order) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      return {
+        orderId: order.id,
+        user: order.user,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod,
+        trackingNumber: order.trackingNumber,
+        orderItems: order.orderItems.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountPercent: item.discountPercent,
+          subtotal: item.subtotal,
+          productCost: item.product.cost,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
+      };
+    }),
 
   getByIdAdmin: productManagerProcedure
     .input(z.object({ orderId: z.string().uuid() }))
@@ -270,6 +360,10 @@ export const orderRouter = createTRPCRouter({
       // find the order by ID
       const order = await ctx.db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
+        with: {
+          user: true,
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order) {
@@ -286,21 +380,23 @@ export const orderRouter = createTRPCRouter({
 
       const itemIds = items.map((i) => i.id);
       const refundRows =
-      itemIds.length === 0
-        ? []
-        : await ctx.db.query.refunds.findMany({
-            where: inArray(refunds.orderItemId, itemIds),
-            columns: {
-              orderItemId: true,
-              status: true,
-            },
-          });
+        itemIds.length === 0
+          ? []
+          : await ctx.db.query.refunds.findMany({
+              where: inArray(refunds.orderItemId, itemIds),
+              columns: {
+                orderItemId: true,
+                status: true,
+              },
+            });
 
-      const refundMap = new Map(refundRows.map((r) => [r.orderItemId, r.status]));
+      const refundMap = new Map(
+        refundRows.map((r) => [r.orderItemId, r.status]),
+      );
 
       return {
         orderId: order.id,
-        userId: order.userId, // admin needs to know whose order it is
+        user: order.user,
         status: order.status,
         totalAmount: order.totalAmount,
         createdAt: order.createdAt,
@@ -308,11 +404,12 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
-        orderItems: items.map((item) => ({
+        orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          discountPercent: item.discountPercent,
           subtotal: item.subtotal,
           productName: item.product.name,
           productImage: item.product.frontImage,
@@ -331,7 +428,8 @@ export const orderRouter = createTRPCRouter({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
       });
 
-      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+      if (!order)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
 
       if (order.status !== "processing") {
         throw new TRPCError({
@@ -347,8 +445,6 @@ export const orderRouter = createTRPCRouter({
 
       return { ok: true };
     }),
-
-
 
   refundRequest: protectedProcedure
     .input(
@@ -366,7 +462,8 @@ export const orderRouter = createTRPCRouter({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
       });
 
-      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+      if (!order)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
 
       if (order.status !== "delivered") {
         throw new TRPCError({
@@ -393,7 +490,10 @@ export const orderRouter = createTRPCRouter({
       });
 
       if (items.length === 0) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Order item(s) not found." });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order item(s) not found.",
+        });
       }
 
       const itemIds = items.map((i) => i.id);
@@ -409,7 +509,8 @@ export const orderRouter = createTRPCRouter({
         if (prev && prev.status !== "rejected") {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "Refund request already exists for one of the selected items.",
+            message:
+              "Refund request already exists for one of the selected items.",
           });
         }
       }
@@ -426,110 +527,120 @@ export const orderRouter = createTRPCRouter({
       );
 
       return { ok: true };
-  }),
+    }),
 
   refundRequestsList: salesManagerProcedure.query(async ({ ctx }) => {
-  const rows = await ctx.db
-    .select({
-      refundId: refunds.id,
-      refundStatus: refunds.status,
-      refundAmount: refunds.refundAmount,
-      reason: refunds.reason,
-      requestDate: refunds.requestDate,
-      managerId: refunds.managerId,
+    const rows = await ctx.db
+      .select({
+        refundId: refunds.id,
+        refundStatus: refunds.status,
+        refundAmount: refunds.refundAmount,
+        reason: refunds.reason,
+        requestDate: refunds.requestDate,
+        managerId: refunds.managerId,
 
-      orderItemId: orderItems.id,
-      quantity: orderItems.quantity,
-      unitPrice: orderItems.unitPrice,
-      subtotal: orderItems.subtotal,
+        orderItemId: orderItems.id,
+        quantity: orderItems.quantity,
+        unitPrice: orderItems.unitPrice,
+        subtotal: orderItems.subtotal,
 
-      orderId: orders.id,
-      orderStatus: orders.status,
-      orderCreatedAt: orders.createdAt,
+        orderId: orders.id,
+        orderStatus: orders.status,
+        orderCreatedAt: orders.createdAt,
 
-      productId: product.id,
-      productName: product.name,
-      productModel: product.model,
-      productCategory: product.category,
-      frontImage: product.frontImage,
-      backImage: product.backImage,
+        productId: product.id,
+        productName: product.name,
+        productModel: product.model,
+        productCategory: product.category,
+        frontImage: product.frontImage,
+        backImage: product.backImage,
 
-      userId: user.id,
-      userName: user.name,
-      userEmail: user.email,
-    })
-    .from(refunds)
-    .innerJoin(orderItems, eq(refunds.orderItemId, orderItems.id))
-    .innerJoin(orders, eq(orderItems.orderId, orders.id))
-    .innerJoin(product, eq(orderItems.productId, product.id))
-    .innerJoin(user, eq(orders.userId, user.id))
-    .where(eq(refunds.status, "pending"))
-    .orderBy(desc(refunds.requestDate));
-
-  return rows;
-}),
-
-
-refundDecision: salesManagerProcedure
-  .input(
-    z.object({
-      refundId: z.string().uuid(),
-      decision: z.enum(["approved", "rejected"]),
-    }),
-  )
-  .mutation(async ({ ctx, input }) => {
-    const r = await ctx.db.query.refunds.findFirst({
-      where: eq(refunds.id, input.refundId),
-    });
-    if (!r) throw new TRPCError({ code: "NOT_FOUND", message: "Refund request not found." });
-
-    if (r.status !== "pending") {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Only pending refund requests can be decided.",
-      });
-    }
-
-    const item = await ctx.db.query.orderItems.findFirst({
-      where: eq(orderItems.id, r.orderItemId),
-    });
-    if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Order item not found." });
-
-    const order = await ctx.db.query.orders.findFirst({
-      where: eq(orders.id, item.orderId),
-    });
-    if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
-
-    const p = await ctx.db.query.product.findFirst({
-      where: eq(product.id, item.productId),
-    });
-    if (!p) throw new TRPCError({ code: "NOT_FOUND", message: "Product not found." });
-
-    const u = await ctx.db.query.user.findFirst({
-      where: eq(user.id, order.userId),
-    });
-    if (!u) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
-
-    await ctx.db
-      .update(refunds)
-      .set({
-        status: input.decision,
-        managerId: ctx.session.user.id,
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
       })
-      .where(eq(refunds.id, r.id));
+      .from(refunds)
+      .innerJoin(orderItems, eq(refunds.orderItemId, orderItems.id))
+      .innerJoin(orders, eq(orderItems.orderId, orders.id))
+      .innerJoin(product, eq(orderItems.productId, product.id))
+      .innerJoin(user, eq(orders.userId, user.id))
+      .where(eq(refunds.status, "pending"))
+      .orderBy(desc(refunds.requestDate));
 
-    await emailService.sendRefundDecisionEmail({
-      to: u.email,
-      name: u.name,
-      orderId: order.id,
-      productName: p.name,
-      refundAmount: r.refundAmount,
-      decision: input.decision,
-    });
-
-    return { ok: true };
+    return rows;
   }),
 
+  refundDecision: salesManagerProcedure
+    .input(
+      z.object({
+        refundId: z.string().uuid(),
+        decision: z.enum(["approved", "rejected"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const r = await ctx.db.query.refunds.findFirst({
+        where: eq(refunds.id, input.refundId),
+      });
+      if (!r)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Refund request not found.",
+        });
 
+      if (r.status !== "pending") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only pending refund requests can be decided.",
+        });
+      }
 
+      const item = await ctx.db.query.orderItems.findFirst({
+        where: eq(orderItems.id, r.orderItemId),
+      });
+      if (!item)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order item not found.",
+        });
+
+      const order = await ctx.db.query.orders.findFirst({
+        where: eq(orders.id, item.orderId),
+      });
+      if (!order)
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found." });
+
+      const p = await ctx.db.query.product.findFirst({
+        where: eq(product.id, item.productId),
+      });
+      if (!p)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found.",
+        });
+
+      const u = await ctx.db.query.user.findFirst({
+        where: eq(user.id, order.userId),
+      });
+      if (!u)
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+
+      await ctx.db
+        .update(refunds)
+        .set({
+          status: input.decision,
+          managerId: ctx.session.user.id,
+        })
+        .where(eq(refunds.id, r.id));
+
+      await emailService.sendRefundDecisionEmail({
+        to: u.email,
+        name: u.name,
+        orderId: order.id,
+        productName: p.name,
+        refundAmount: r.refundAmount,
+        decision: input.decision,
+      });
+
+      return { ok: true };
+    }),
 });
