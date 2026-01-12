@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -23,15 +22,12 @@ import {
   Heart,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
 export const UserMenu = () => {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
-
   if (isPending) {
     return;
   }
-
   if (!session?.user) {
     return (
       <>
@@ -41,7 +37,6 @@ export const UserMenu = () => {
         >
           Sign up
         </Link>
-
         <Link
           href="/login"
           className="rounded-full bg-black px-4 py-1.5 text-white transition hover:bg-gray-600"
@@ -51,8 +46,12 @@ export const UserMenu = () => {
       </>
     );
   }
-
   const listItems = [
+    {
+      icon: UserIcon,
+      property: "Profile",
+      onClick: () => router.push("/profile"),
+    },
     {
       icon: ReceiptText,
       property: "Order History",
@@ -72,7 +71,6 @@ export const UserMenu = () => {
       },
     },
   ];
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
