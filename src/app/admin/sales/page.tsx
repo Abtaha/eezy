@@ -1,27 +1,48 @@
 import Link from "next/link";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-export default async function SalesManagerAdminPage() {
+export default function SalesManagerPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-8">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sales Manager</h1>
-        <p className="text-muted-foreground text-sm">
-          Admin tools for refund approvals and order support.
-        </p>
-      </header>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Sales Manager Admin Panel</h2>
+      <p className="text-muted-foreground text-sm">
+        Choose what you want to manage.
+      </p>
 
-      <section className="rounded-lg border p-4">
-        <h2 className="text-base font-semibold"></h2>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/admin/sales/refunds"
-            className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-          >
-            Refund requests
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/sales/discount" className="block h-full">
+            <CardHeader>
+              <CardTitle>Discounts</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm">
+              Manage discounts.
+            </CardContent>
           </Link>
-        </div>
-      </section>
-    </main>
+        </Card>
+
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/sales/invoices" className="block h-full">
+            <CardHeader>
+              <CardTitle>Invoices</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm">
+              Manage invoices.
+            </CardContent>
+          </Link>
+        </Card>
+
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/sales/refunds" className="block h-full">
+            <CardHeader>
+              <CardTitle>Refunds</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm">
+              Refund Requests.
+            </CardContent>
+          </Link>
+        </Card>
+      </div>
+    </div>
   );
 }

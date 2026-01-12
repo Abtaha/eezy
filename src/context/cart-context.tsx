@@ -16,16 +16,18 @@ export interface CartItem {
   id: string;
   name: string;
   price: number;
+  discount: number;
   quantity: number;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem, disableToast?: boolean) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
   mergeCart: (items: CartItem[]) => void;
   total: number;
+  totalCount: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -48,7 +50,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: () => {
       utils.cart.getCart.invalidate();
-      toast.success("Item added to cart");
     },
     onError: (err) => {
       toast.error(err.message);
@@ -87,6 +88,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         id: item.productID,
         name: item.product.name,
         price: Number(item.product.price),
+        discount: Number(item.product.discountPercentage),
         quantity: item.quantity,
       }));
 
@@ -130,7 +132,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cart, isGuest]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = (item: CartItem, disableToast = false) => {
     if (isAuthenticated) {
       addItemMutation.mutate({ productId: item.id, quantity: item.quantity });
     } else {
@@ -145,6 +147,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         return [...prev, item];
       });
+    }
+
+    if (!disableToast) {
       toast.success("Item added to cart");
     }
   };
@@ -188,11 +193,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = cart.reduce(
+    (sum, item) =>
+      sum +
+      (item.discount > 0
+        ? item.price * (1 - item.discount / 100)
+        : item.price) *
+        item.quantity,
+    0,
+  );
+
+  const totalCount = cart.reduce(
+    (sum, item) => 
+      sum + item.quantity, 
+    0,
+  );
 
   return (
     <CartContext.Provider
-      value={{ cart, addItem, removeItem, clearCart, mergeCart, total }}
+      value={{ cart, addItem, removeItem, clearCart, mergeCart, total, totalCount, }}
     >
       {children}
     </CartContext.Provider>

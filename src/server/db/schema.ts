@@ -13,17 +13,33 @@ import {
 
 import { relations } from "drizzle-orm";
 
+export const userRoleEnum = pgEnum("user_role", [
+  "user",
+  "salesManager",
+  "supportAgent",
+  "productManager",
+]);
+
+function generateTaxID() {
+  return `TX-${Math.floor(1000000 + Math.random() * 9000000)}`;
+}
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
-  role: text("role").default("user").notNull(),
+  taxID: text("tax_id")
+    .notNull()
+    .unique()
+    .$defaultFn(() => generateTaxID()),
+  role: userRoleEnum("role").default("user").notNull(),
+  homeAddress: text("home_address").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -35,7 +51,7 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -64,7 +80,7 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("account_userId_idx").on(table.userId)],
@@ -80,7 +96,7 @@ export const verification = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
@@ -93,15 +109,17 @@ export const product = pgTable("product", {
   category: text("category").notNull(),
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }).notNull(),
   serialNumber: serial("serial_number").notNull().unique(),
+  distributor: text("distributor"),
   description: text("description"),
   quantityInStock: integer("quantity_in_stock").default(0).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  discountPercentage: integer("discount_percentage").default(0).notNull(),
   warrantyStatus: boolean("warranty_status").default(false).notNull(),
-  distributor: text("distributor"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -204,6 +222,12 @@ export const orderItems = pgTable("order_items", {
 
   quantity: integer("quantity").notNull(),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  discountPercent: numeric("discount_percent", {
+    precision: 10,
+    scale: 2,
+  })
+    .default("0")
+    .notNull(),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -247,18 +271,99 @@ export const message = pgTable("messages", {
     .references(() => conversation.id, { onDelete: "cascade" }),
   senderType: senderTypeEnum("sender_type").notNull(),
   content: text("content"),
-  fileUrl: text("file_url"),
-  fileType: text("file_type"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const attachments = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+
+  // Link the file to a specific message
+  messageId: uuid("message_id")
+    .references(() => message.id, { onDelete: "cascade" }) // If message deletes, files delete
+    .notNull(),
+
+  url: text("url").notNull(), // S3 or Uploadthing URL
+  name: text("name"),
+  type: text("type"),
+  size: integer("size"), // File size in bytes (optional, useful for UI)
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// status for refund
+// UPDATED: Added "refunded" here to match your later definition
+export const refundStatusEnum = pgEnum("refund_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "refunded",
+]);
+
+// refunds table
+export const refunds = pgTable("refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderItemId: uuid("order_item_id")
+    .notNull()
+    .references(() => orderItems.id, { onDelete: "cascade" }),
+  managerId: text("manager_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  requestDate: timestamp("request_date").defaultNow().notNull(),
+  status: refundStatusEnum("status").notNull(),
+  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const wishlist = pgTable("wishlist", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const wishlistItem = pgTable(
+  "wishlist_item",
+  {
+    id: serial("id").primaryKey(),
+    wishlistId: integer("wishlist_id")
+      .notNull()
+      .references(() => wishlist.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("wishlist_item_wishlist_idx").on(table.wishlistId),
+    index("wishlist_item_product_idx").on(table.productId),
+  ],
+);
+
+// RELATIONS ------------------------------------------------------------------
+
 export const userRelations = relations(user, ({ one, many }) => ({
-  cart: one(cart),
+  cart: one(cart, {
+    fields: [user.id],
+    references: [cart.userID],
+  }),
   orders: many(orders),
   comments: many(comments),
   ratings: many(ratings),
   sessions: many(session),
   accounts: many(account),
+  wishlists: one(wishlist),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -288,6 +393,7 @@ export const productRelations = relations(product, ({ many }) => ({
   orderItems: many(orderItems),
   comments: many(comments),
   ratings: many(ratings),
+  wishlistItems: many(wishlistItem),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
@@ -309,7 +415,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   orderItems: many(orderItems),
 }));
 
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+export const orderItemsRelations = relations(orderItems, ({ one, many }) => ({
   order: one(orders, {
     fields: [orderItems.orderId],
     references: [orders.id],
@@ -318,9 +424,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.productId],
     references: [product.id],
   }),
+  refunds: many(refunds),
 }));
 
-// relations for commets
+// relations for comments
 export const commentsRelations = relations(comments, ({ one }) => ({
   user: one(user, {
     fields: [comments.userId],
@@ -341,6 +448,18 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   product: one(product, {
     fields: [ratings.productId],
     references: [product.id],
+  }),
+}));
+
+// Refunds relations
+export const refundsRelations = relations(refunds, ({ one }) => ({
+  orderItem: one(orderItems, {
+    fields: [refunds.orderItemId],
+    references: [orderItems.id],
+  }),
+  manager: one(user, {
+    fields: [refunds.managerId],
+    references: [user.id],
   }),
 }));
 
@@ -365,47 +484,37 @@ export const conversationRelations = relations(
 );
 
 // relations for message
-export const messageRelations = relations(message, ({ one }) => ({
+export const messageRelations = relations(message, ({ one, many }) => ({
   conversation: one(conversation, {
     fields: [message.conversationId],
     references: [conversation.id],
   }),
+  attachments: many(attachments),
 }));
 
-
-export const refundStatusEnum = pgEnum("refund_status", [
-  "pending",
-  "approved",
-  "rejected",
-  "refunded",
-]);
-
-// refunds table
-export const refunds = pgTable("refunds", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  orderItemId: uuid("order_item_id")
-    .notNull()
-    .references(() => orderItems.id, { onDelete: "cascade" }),
-  managerId: text("manager_id").references(() => user.id, { onDelete: "set null" }),
-  requestDate: timestamp("request_date").defaultNow().notNull(),
-  status: refundStatusEnum("status").notNull(),
-  refundAmount: numeric("refund_amount", { precision: 10, scale: 2 }).notNull(),
-  reason: text("reason").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
-
-// Refunds relations
-export const refundsRelations = relations(refunds, ({ one }) => ({
-  orderItem: one(orderItems, {
-    fields: [refunds.orderItemId],
-    references: [orderItems.id],
+// An attachment belongs to ONE message
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  message: one(message, {
+    fields: [attachments.messageId],
+    references: [message.id],
   }),
-  manager: one(user, {
-    fields: [refunds.managerId],
+}));
+
+export const wishlistRelations = relations(wishlist, ({ one, many }) => ({
+  user: one(user, {
+    fields: [wishlist.userId],
     references: [user.id],
+  }),
+  items: many(wishlistItem),
+}));
+
+export const wishlistItemRelations = relations(wishlistItem, ({ one }) => ({
+  wishlist: one(wishlist, {
+    fields: [wishlistItem.wishlistId],
+    references: [wishlist.id],
+  }),
+  product: one(product, {
+    fields: [wishlistItem.productId],
+    references: [product.id],
   }),
 }));

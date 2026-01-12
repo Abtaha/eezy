@@ -1,23 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type OrderStatus = "processing" | "in_transit" | "delivered";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { InvoiceTemplate } from "@/server/services/invoice-template";
+
+import { type AppRouter } from "@/server/api/root";
+import { type inferProcedureOutput } from "@trpc/server";
 
 function formatTR(date: string | Date) {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -35,27 +32,14 @@ function money(value: string | number) {
   return `$ ${n.toFixed(2)}`;
 }
 
-export default function AdminOrderDetailPage() {
+export default function AdminInvoiceDetailPage() {
   const params = useParams<{ orderId: string }>();
   const orderId = params.orderId;
 
-  const utils = api.useUtils();
-
-  const { data, isLoading } = api.order.getByIdAdmin.useQuery(
+  const { data, isLoading } = api.order.getByIdAdminSales.useQuery(
     { orderId },
     { enabled: !!orderId },
   );
-
-  const updateStatusMutation = api.order.updateStatus.useMutation({
-    onSuccess: async () => {
-      toast.success("Order status updated");
-      await utils.order.getByIdAdmin.invalidate({ orderId });
-      await utils.order.getAllAdmin.invalidate();
-    },
-    onError: () => {
-      toast.error("Failed to update order status");
-    },
-  });
 
   if (isLoading) {
     return <div className="text-muted-foreground text-sm">Loading…</div>;
@@ -66,10 +50,10 @@ export default function AdminOrderDetailPage() {
       <div className="space-y-3">
         <p className="text-muted-foreground text-sm">Order not found.</p>
         <Link
-          href="/admin/product/orders"
+          href="/admin/sales/invoices"
           className="text-sm underline underline-offset-4"
         >
-          Back to orders
+          Back to invoices
         </Link>
       </div>
     );
@@ -88,12 +72,40 @@ export default function AdminOrderDetailPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/product/orders"
-          className="text-sm underline underline-offset-4"
-        >
-          Back
-        </Link>
+        <div className="flex items-center gap-x-4">
+          <PDFDownloadLink
+            document={
+              <InvoiceTemplate
+                orderId={data.orderId}
+                date={new Date(data.createdAt)}
+                address={data.shippingAddress ?? ""}
+                items={data.orderItems.map((item) => ({
+                  name: item.productName ?? "Unknown Product",
+                  quantity: item.quantity,
+                  price: Number(item.unitPrice) || 0,
+                  discountPercent: Number(item.discountPercent) || 0,
+                  subtotal: Number(item.subtotal) || 0,
+                }))}
+                total={Number(data.totalAmount) || 0}
+              />
+            }
+            fileName={`invoice-${data.orderId}.pdf`}
+            style={{ textDecoration: "none" }}
+          >
+            {({ loading }) => (
+              <Button onClick={(e) => e.stopPropagation()}>
+                {loading ? "Generating..." : "Download PDF"}
+              </Button>
+            )}
+          </PDFDownloadLink>
+
+          <Link
+            href="/admin/sales/invoices"
+            className="text-sm underline underline-offset-4"
+          >
+            Back
+          </Link>
+        </div>
       </div>
 
       {/* Summary */}
@@ -101,26 +113,6 @@ export default function AdminOrderDetailPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Summary</CardTitle>
-
-            {/* STATUS SELECT */}
-            <Select
-              value={data.status as OrderStatus}
-              onValueChange={(value: OrderStatus) =>
-                updateStatusMutation.mutate({
-                  orderId: data.orderId,
-                  status: value,
-                })
-              }
-            >
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="in_transit">In transit</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-              </SelectContent>
-            </Select>
           </CardHeader>
 
           <CardContent className="space-y-3 text-sm">
@@ -233,6 +225,10 @@ export default function AdminOrderDetailPage() {
                     Discount: {it.discountPercent}%
                   </p>
                 )}
+
+                <p className="text-muted-foreground text-xs">
+                  Initial Cost: {money(it.productCost)}
+                </p>
               </div>
             </div>
           ))}
