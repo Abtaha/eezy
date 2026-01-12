@@ -11,6 +11,7 @@ import { CartProvider } from "@/context/cart-context";
 import { auth } from "@/server/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 export const metadata: Metadata = {
   title: "Eezy",
@@ -39,6 +40,7 @@ export default async function AppLayout({
       <div className={geist.variable}>
         <Header />
         <main className="grow">{children}</main>
+        <ChatWidget />
         <Footer />
       </div>
     </CartProvider>
