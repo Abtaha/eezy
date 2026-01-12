@@ -344,9 +344,23 @@ export default function UserContextPage() {
                                 />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <h4 className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                                  {item.product.name}
-                                </h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {item.product.name}
+                                  </h4>
+
+                                  {/* REFUND BADGE */}
+                                  {(item.refunds[0]?.status === "approved" ||
+                                    item.refunds[0]?.status === "refunded") && (
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${"bg-green-100 text-green-700"}`}
+                                    >
+                                      {item.refunds[0]?.status === "approved"
+                                        ? "Refund Approved"
+                                        : "Refunded"}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="mt-1 text-xs text-gray-500">
                                   Model: {item.product.model}
                                 </p>

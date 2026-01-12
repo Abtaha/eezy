@@ -11,9 +11,9 @@ import { db } from "@/server/db";
 import { orders, orderItems, product, refunds, user } from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { emailService } from "@/server/services/emailService";
 
 import { processDelivery } from "@/server/services/send-invoice";
+import { processRefundDecisionEmail } from "@/server/services/send-refund-email";
 
 // single order item
 const orderItem = z.object({
@@ -148,7 +148,7 @@ export const orderRouter = createTRPCRouter({
     .input(
       z.object({
         orderId: z.string().uuid(),
-        status: z.enum(["processing", "in_transit", "delivered"]),
+        status: z.enum(["processing", "in_transit", "delivered", "cancelled"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -184,38 +184,49 @@ export const orderRouter = createTRPCRouter({
   getAllAdminSales: salesManagerProcedure.query(async ({ ctx }) => {
     const allOrders = await ctx.db.query.orders.findMany({
       orderBy: desc(orders.createdAt),
+      where: and(eq(orders.status, "delivered")),
       with: {
         user: true,
         orderItems: {
           with: {
             product: true,
+            refunds: true,
           },
         },
       },
     });
 
-    return allOrders.map((order) => ({
-      id: order.id,
-      userId: order.userId,
-      status: order.status,
-      totalAmount: order.totalAmount,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      shippingAddress: order.shippingAddress,
-      paymentMethod: order.paymentMethod,
-      trackingNumber: order.trackingNumber,
-      orderItems: order.orderItems.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discountPercent: item.discountPercent,
-        subtotal: item.subtotal,
-        productCost: item.product.cost,
-        productName: item.product.name,
-        productImage: item.product.frontImage,
-      })),
-    }));
+    return allOrders
+      .filter((order) => {
+        const hasRefund = order.orderItems.some((item) =>
+          item.refunds.some(
+            (r) => r.status === "approved" || r.status === "refunded",
+          ),
+        );
+        return !hasRefund;
+      })
+      .map((order) => ({
+        id: order.id,
+        userId: order.userId,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod,
+        trackingNumber: order.trackingNumber,
+        orderItems: order.orderItems.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountPercent: item.discountPercent,
+          subtotal: item.subtotal,
+          productCost: item.product.cost,
+          productName: item.product.name,
+          productImage: item.product.frontImage,
+        })),
+      }));
   }),
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -322,7 +333,7 @@ export const orderRouter = createTRPCRouter({
         where: eq(orders.id, input.orderId),
         with: {
           user: true,
-          orderItems: { with: { product: true } },
+          orderItems: { with: { product: true, refunds: true } },
         },
       });
 
@@ -350,6 +361,8 @@ export const orderRouter = createTRPCRouter({
           productCost: item.product.cost,
           productName: item.product.name,
           productImage: item.product.frontImage,
+
+          refundStatus: item.refunds[0]?.status,
         })),
       };
     }),
@@ -362,7 +375,7 @@ export const orderRouter = createTRPCRouter({
         where: eq(orders.id, input.orderId),
         with: {
           user: true,
-          orderItems: { with: { product: true } },
+          orderItems: { with: { product: true, refunds: true } },
         },
       });
 
@@ -375,6 +388,7 @@ export const orderRouter = createTRPCRouter({
         where: eq(orderItems.orderId, input.orderId),
         with: {
           product: true,
+          refunds: true,
         },
       });
 
@@ -404,6 +418,10 @@ export const orderRouter = createTRPCRouter({
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
         trackingNumber: order.trackingNumber,
+        refunds: order.orderItems.map((item) => ({
+          id: item.refunds[0]?.id,
+          status: item.refunds[0]?.status,
+        })),
         orderItems: order.orderItems.map((item) => ({
           id: item.id,
           productId: item.productId,
@@ -426,6 +444,9 @@ export const orderRouter = createTRPCRouter({
 
       const order = await ctx.db.query.orders.findFirst({
         where: and(eq(orders.id, input.orderId), eq(orders.userId, userId)),
+        with: {
+          orderItems: { with: { product: true } },
+        },
       });
 
       if (!order)
@@ -442,6 +463,15 @@ export const orderRouter = createTRPCRouter({
         .update(orders)
         .set({ status: "cancelled" })
         .where(eq(orders.id, order.id));
+
+      for (const item of order.orderItems) {
+        await ctx.db
+          .update(product)
+          .set({
+            quantityInStock: item.product.quantityInStock + item.quantity,
+          })
+          .where(eq(product.id, item.productId));
+      }
 
       return { ok: true };
     }),
@@ -632,7 +662,12 @@ export const orderRouter = createTRPCRouter({
         })
         .where(eq(refunds.id, r.id));
 
-      await emailService.sendRefundDecisionEmail({
+      await ctx.db
+        .update(product)
+        .set({ quantityInStock: p.quantityInStock + item.quantity })
+        .where(eq(product.id, p.id));
+
+      await processRefundDecisionEmail({
         to: u.email,
         name: u.name,
         orderId: order.id,
