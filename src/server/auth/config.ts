@@ -20,6 +20,16 @@ export const auth = betterAuth({
         input: false,
         defaultValue: "user",
       },
+      taxID: {
+        type: "string",
+        required: false,
+        returned: true,
+      },
+      homeAddress: {
+        type: "string",
+        input: false,
+        defaultValue: "No address provided",
+      },
     },
   },
 });
