@@ -63,6 +63,7 @@ export default function AddProductPage() {
   const [quantityInStock, setQuantityInStock] = useState("0");
   const [price, setPrice] = useState("");
   const [warrantyStatus, setWarrantyStatus] = useState(false);
+  const [cost, setCost] = useState("");
 
   const [frontImage, setFrontImage] = useState("");
   const [backImage, setBackImage] = useState("");
@@ -102,6 +103,7 @@ export default function AddProductPage() {
         distributor: distributor || null,
         quantityInStock: q,
         price: p,
+        cost: cost !== "" ? Number.parseFloat(cost) : undefined,
         warrantyStatus,
         frontImage,
         backImage,
@@ -185,6 +187,15 @@ export default function AddProductPage() {
                 inputMode="decimal"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Cost</p>
+              <Input
+                inputMode="decimal"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
               />
             </div>
 
