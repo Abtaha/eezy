@@ -65,7 +65,8 @@ export default function OrderItemActions({
       toast.success("Refund request submitted.");
       setOpen(false);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to request refund.";
+      const message =
+        e instanceof Error ? e.message : "Failed to request refund.";
       toast.error(message);
     }
   }
@@ -85,7 +86,7 @@ export default function OrderItemActions({
             : "Refund: Refunded";
 
     return (
-      <span className="text-xs text-muted-foreground whitespace-nowrap">
+      <span className="text-muted-foreground text-xs whitespace-nowrap">
         {label}
       </span>
     );
@@ -97,7 +98,7 @@ export default function OrderItemActions({
       <button
         onClick={() => setOpen(true)}
         disabled={refundRequest.isPending}
-        className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+        className="hover:bg-muted rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50"
       >
         {refundRequest.isPending ? "Requesting..." : "Request refund"}
       </button>
@@ -112,16 +113,16 @@ export default function OrderItemActions({
           </AlertDialogHeader>
 
           <div className="mt-2 space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-muted-foreground text-xs font-medium">
               Refund reason
             </label>
             <input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={refundRequest.isPending}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+              className="bg-background focus:ring-ring w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-60"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Tip: keep it clear, like “Wrong size” or “Damaged item”.
             </p>
           </div>
