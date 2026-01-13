@@ -8,6 +8,7 @@ const items = [
   { href: "/admin/product/comments", label: "Comments" },
   { href: "/admin/product/orders", label: "Orders" },
   { href: "/admin/product/manage-products", label: "Products" },
+  { href: "/admin/product/category", label: "Categories" },
 ];
 
 export default async function ProductAdminLayout({
@@ -26,7 +27,7 @@ export default async function ProductAdminLayout({
   return (
     <div className="flex h-full">
       {/* Sidepanel */}
-      <Sidebar items={items} />
+      {<Sidebar items={items} />}
 
       {/* Main content */}
       <main className="flex-1 p-6">{children}</main>

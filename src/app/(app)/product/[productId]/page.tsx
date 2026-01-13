@@ -340,7 +340,7 @@ export default function ProductPage({
                     category={product.category}
                     price={parseFloat(product.price)}
                     discountPercentage={product.discountPercentage}
-                    rating={4}
+                    rating={product.rating}
                   />
                 ))}
               </div>

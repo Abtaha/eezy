@@ -1,16 +1,11 @@
 import Link from "next/link";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function ProductManagerPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Product Manager Admin Panel</h2>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         Choose what you want to manage.
       </p>
 
@@ -20,7 +15,7 @@ export default function ProductManagerPage() {
             <CardHeader>
               <CardTitle>Comments</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <CardContent className="text-muted-foreground text-sm">
               Review and approve customer comments.
             </CardContent>
           </Link>
@@ -31,7 +26,7 @@ export default function ProductManagerPage() {
             <CardHeader>
               <CardTitle>Orders</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <CardContent className="text-muted-foreground text-sm">
               Update order statuses.
             </CardContent>
           </Link>
@@ -45,17 +40,24 @@ export default function ProductManagerPage() {
             <CardHeader>
               <CardTitle>Products</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
+            <CardContent className="text-muted-foreground text-sm">
               Add/remove products and manage stock.
             </CardContent>
           </Link>
         </Card>
 
-        {/* Empty spacer to keep alignment */}
+        <Card className="hover:bg-muted/60 transition">
+          <Link href="/admin/product/category" className="block h-full">
+            <CardHeader>
+              <CardTitle>Categories</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-sm">
+              Manage product categories.
+            </CardContent>
+          </Link>
+        </Card>
         <div />
       </div>
     </div>
   );
 }
-
-

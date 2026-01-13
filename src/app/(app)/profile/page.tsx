@@ -114,6 +114,18 @@ export default function ProfilePage() {
 
       <div className="rounded-xl border bg-white p-8 shadow-sm">
         <div className="grid gap-6">
+          <div className="space-y-2.5">
+            <Label className="flex items-center gap-2 text-gray-600">
+              <User className="h-4 w-4" />
+              User ID
+            </Label>
+            <Input
+              value={profile.id}
+              disabled
+              className="cursor-not-allowed border-gray-200 bg-gray-100/50 text-gray-500"
+            />
+          </div>
+
           {/* Name Field (READ ONLY) */}
           <div className="space-y-2.5">
             <Label className="flex items-center gap-2 text-gray-600">

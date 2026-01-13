@@ -5,6 +5,8 @@ import { api } from "@/trpc/server";
 import OrderItemActions from "./OrderItemActions";
 import OrderCancelButton from "./OrderCancelButton";
 
+import DownloadInvoiceButton from "./download-invoice";
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -49,7 +51,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        <OrderCancelButton orderId={order.orderId} status={order.status} />
+        <div className="flex flex-row items-center gap-4">
+          <DownloadInvoiceButton order={order} />
+          <OrderCancelButton orderId={order.orderId} status={order.status} />
+        </div>
       </header>
 
       {/* General info */}

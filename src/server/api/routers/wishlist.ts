@@ -14,6 +14,7 @@ export const wishlistRouter = createTRPCRouter({
             product: {
               with: {
                 ratings: true,
+                category: true,
               },
             },
           },
@@ -37,6 +38,7 @@ export const wishlistRouter = createTRPCRouter({
                   .map((rating) => rating.rating)
                   .reduce((a, b) => a + b, 0) / item.product.ratings.length
               : 0,
+          category: item.product.category.name,
         },
       })),
     };

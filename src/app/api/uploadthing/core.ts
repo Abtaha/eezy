@@ -18,7 +18,7 @@ const isAuthenticated = async () => {
 export const eezyFileRouter = {
   productImageUploader: f({
     image: {
-      maxFileSize: "4MB",
+      maxFileSize: "16MB",
       maxFileCount: 1,
       minFileCount: 1,
     },

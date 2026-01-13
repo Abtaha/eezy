@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 import {
   AlertDialog,
@@ -40,7 +41,8 @@ export default function OrderCancelButton({ orderId, status }: Props) {
       toast.success("Order cancelled.");
       setOpen(false);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Failed to cancel order.";
+      const message =
+        e instanceof Error ? e.message : "Failed to cancel order.";
       toast.error(message);
     } finally {
       setBusy(false);
@@ -49,13 +51,13 @@ export default function OrderCancelButton({ orderId, status }: Props) {
 
   return (
     <>
-      <button
+      <Button
         onClick={() => setOpen(true)}
+        variant="outline"
         disabled={busy || cancelOrder.isPending}
-        className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
       >
         {cancelOrder.isPending ? "Cancelling..." : "Cancel order"}
-      </button>
+      </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>

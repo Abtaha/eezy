@@ -9,6 +9,7 @@ export const profileRouter = createTRPCRouter({
     const profile = await ctx.db.query.user.findFirst({
       where: eq(user.id, ctx.session.user.id),
       columns: {
+        id: true,
         name: true,
         email: true,
         homeAddress: true,

@@ -5,6 +5,7 @@ import { socialRouter } from "@/server/api/routers/social";
 import { conversationRouter } from "@/server/api/routers/conversation";
 import { wishlistRouter } from "@/server/api/routers/wishlist";
 import { profileRouter } from "@/server/api/routers/profile";
+import { categoryRouter } from "@/server/api/routers/category";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   conversation: conversationRouter,
   wishlist: wishlistRouter,
   profile: profileRouter,
+  category: categoryRouter,
 });
 
 // export type definition of API

@@ -171,7 +171,6 @@ export default function OrdersPage() {
                     onValueChange={(value: OrderStatus) =>
                       updateStatus(order.id, value)
                     }
-                    disabled={order.status === "cancelled"}
                   >
                     <SelectTrigger
                       className="h-8 w-32 text-xs"

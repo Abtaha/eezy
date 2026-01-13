@@ -111,7 +111,6 @@ export default function AdminOrderDetailPage() {
                   status: value,
                 })
               }
-              disabled={data.status === "cancelled"}
             >
               <SelectTrigger className="h-8 w-36 text-xs">
                 <SelectValue />
@@ -219,7 +218,12 @@ export default function AdminOrderDetailPage() {
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{it.productName}</p>
+                      <div className="flex flex-col gap-y-0.5">
+                        <p className="text-xs font-light text-gray-600">
+                          {it.productId}
+                        </p>
+                        <p className="text-sm font-medium">{it.productName}</p>
+                      </div>
 
                       {/* REFUND BADGE */}
                       {(it.refundStatus === "approved" ||
