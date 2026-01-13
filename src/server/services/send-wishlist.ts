@@ -9,7 +9,7 @@ export async function sendWishlistEmail(productId: string) {
       where: eq(wishlistItem.productId, productId),
       with: {
         wishlist: { with: { user: true } },
-        product: true,
+        product: { with: { category: true } },
       },
     });
 
@@ -45,7 +45,7 @@ export async function sendWishlistEmail(productId: string) {
           </span>
 
           <span style="font-size:13px;color:#71717a;">
-            ${item.product.category} · ${item.product.model}
+            ${item.product.category.name} · ${item.product.model}
           </span>
 
           <!-- Price -->
