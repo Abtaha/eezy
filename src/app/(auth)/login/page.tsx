@@ -29,6 +29,7 @@ export default function Page({
       { email, password },
       {
         onSuccess: () => {
+          router.refresh();
           router.push(callbackUrl ?? "/");
         },
       },
