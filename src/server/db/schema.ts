@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -102,11 +103,22 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+export const category = pgTable("category", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const product = pgTable("product", {
   id: uuid("id").primaryKey(),
   name: text("name").notNull(),
   model: text("model").notNull(),
-  category: text("category").notNull(),
+
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => category.id, { onDelete: "restrict" }),
+
   frontImage: text("front_image").notNull(),
   backImage: text("back_image").notNull(),
   cost: numeric("cost", { precision: 10, scale: 2 }).notNull(),
@@ -388,12 +400,20 @@ export const cartRelations = relations(cart, ({ one, many }) => ({
   items: many(cartItem),
 }));
 
-export const productRelations = relations(product, ({ many }) => ({
+export const categoryRelations = relations(category, ({ many }) => ({
+  products: many(product),
+}));
+
+export const productRelations = relations(product, ({ one, many }) => ({
   cartItems: many(cartItem),
   orderItems: many(orderItems),
   comments: many(comments),
   ratings: many(ratings),
   wishlistItems: many(wishlistItem),
+  category: one(category, {
+    fields: [product.categoryId],
+    references: [category.id],
+  }),
 }));
 
 export const cartItemRelations = relations(cartItem, ({ one }) => ({
