@@ -30,7 +30,12 @@ export default function Page({
       {
         onSuccess: () => {
           router.refresh();
-          router.push(callbackUrl ?? "/");
+
+          if (callbackUrl) {
+            router.push(callbackUrl);
+          } else {
+            window.location.replace("/");
+          }
         },
       },
     );
