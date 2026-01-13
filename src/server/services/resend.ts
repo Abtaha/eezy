@@ -42,13 +42,12 @@ class ResendService {
   }) {
     if (recipients.length === 0) return;
 
-    // dedupe
     const uniqueRecipients = [...new Set(recipients)];
 
     return await this.resend.emails.send({
       from: "Eezy <eezy@abtahafarooq.com>",
-      to: "eezy@abtahafarooq.com", // primary recipient
-      bcc: uniqueRecipients, // actual users
+      to: "Wishlist Updates <wishlist@abtahafarooq.com>",
+      bcc: uniqueRecipients,
       subject,
       html,
     });
