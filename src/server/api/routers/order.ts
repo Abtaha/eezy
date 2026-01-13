@@ -8,7 +8,14 @@ import {
 } from "@/server/api/trpc";
 import { z } from "zod";
 import { db } from "@/server/db";
-import { orders, orderItems, product, refunds, user } from "@/server/db/schema";
+import {
+  orders,
+  orderItems,
+  product,
+  category,
+  refunds,
+  user,
+} from "@/server/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -581,7 +588,7 @@ export const orderRouter = createTRPCRouter({
         productId: product.id,
         productName: product.name,
         productModel: product.model,
-        productCategory: product.category,
+        productCategory: category.name,
         frontImage: product.frontImage,
         backImage: product.backImage,
 
@@ -593,6 +600,7 @@ export const orderRouter = createTRPCRouter({
       .innerJoin(orderItems, eq(refunds.orderItemId, orderItems.id))
       .innerJoin(orders, eq(orderItems.orderId, orders.id))
       .innerJoin(product, eq(orderItems.productId, product.id))
+      .innerJoin(category, eq(product.categoryId, category.id)) // ✅ NEW JOIN
       .innerJoin(user, eq(orders.userId, user.id))
       .where(eq(refunds.status, "pending"))
       .orderBy(desc(refunds.requestDate));
