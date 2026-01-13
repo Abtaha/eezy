@@ -5,10 +5,10 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Toaster } from "sonner";
 
-//import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
-//import { extractRouterConfig } from "uploadthing/server";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
 
-//import { eezyFileRouter } from "@/app/api/uploadthing/core";
+import { eezyFileRouter } from "@/app/api/uploadthing/core";
 
 export const metadata: Metadata = {
   title: "Eezy",
@@ -27,12 +27,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body>
-        
-         {/*
-        <NextSSRPlugin
-          routerConfig={extractRouterConfig(eezyFileRouter)}
-        />
-        */}
+        <NextSSRPlugin routerConfig={extractRouterConfig(eezyFileRouter)} />
         <TRPCReactProvider>
           {children}
           <Toaster />
