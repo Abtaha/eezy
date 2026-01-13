@@ -41,6 +41,9 @@ export default function StorePage() {
   // -- Data Fetching --
   const { data: dbProducts, isLoading } = api.product.getAll.useQuery();
 
+  const { data: allCategories, isLoading: isLoadingCategories } =
+    api.category.getAll.useQuery();
+
   // -- State --
   // Initialize from URL if available, otherwise default
   const initialCategory = searchParams.get("category") ?? "All";
@@ -191,9 +194,11 @@ export default function StorePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="All">All Categories</SelectItem>
-                        <SelectItem value="Men">Men</SelectItem>
-                        <SelectItem value="Women">Women</SelectItem>
-                        <SelectItem value="Kids">Kids</SelectItem>
+                        {allCategories?.map((category) => (
+                          <SelectItem key={category.name} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -280,9 +285,11 @@ export default function StorePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="All">All</SelectItem>
-                        <SelectItem value="Men">Men</SelectItem>
-                        <SelectItem value="Women">Women</SelectItem>
-                        <SelectItem value="Kids">Kids</SelectItem>
+                        {allCategories?.map((category) => (
+                          <SelectItem key={category.name} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

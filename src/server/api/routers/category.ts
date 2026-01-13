@@ -1,10 +1,10 @@
 import * as z from "zod";
 import { createTRPCRouter } from "@/server/api/trpc";
-import { productManagerProcedure } from "@/server/api/trpc";
+import { productManagerProcedure, publicProcedure } from "@/server/api/trpc";
 import { category } from "@/server/db/schema";
 
 export const categoryRouter = createTRPCRouter({
-  getAll: productManagerProcedure.query(async ({ ctx }) => {
+  getAll: publicProcedure.query(async ({ ctx }) => {
     const allCategories = await ctx.db.query.category.findMany({
       columns: {
         name: true,
