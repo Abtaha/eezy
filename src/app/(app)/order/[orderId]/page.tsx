@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/trpc/server";
 
@@ -6,6 +5,10 @@ import OrderItemActions from "./OrderItemActions";
 import OrderCancelButton from "./OrderCancelButton";
 
 import DownloadInvoiceButton from "./download-invoice";
+
+import { redirect, notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/server/auth";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -29,6 +32,14 @@ type PageProps = {
 
 export default async function OrderDetailPage({ params }: PageProps) {
   const { orderId } = await params;
+
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect(`/login?callbackUrl=/order/${orderId}`);
+  }
 
   let order;
   try {
