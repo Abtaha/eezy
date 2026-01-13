@@ -241,7 +241,7 @@ export const orderRouter = createTRPCRouter({
 
     //helper function to get basic info about orders by status also sorted by createdAt in descending order
     async function getOrdersSorted(
-      status: "processing" | "in_transit" | "delivered",
+      status: "processing" | "in_transit" | "delivered" | "cancelled",
     ) {
       return ctx.db.query.orders.findMany({
         where: and(eq(orders.userId, userId), eq(orders.status, status)),
@@ -260,8 +260,9 @@ export const orderRouter = createTRPCRouter({
     const processing = await getOrdersSorted("processing");
     const inTransit = await getOrdersSorted("in_transit");
     const delivered = await getOrdersSorted("delivered");
+    const cancelled = await getOrdersSorted("cancelled");
 
-    const all = [...processing, ...inTransit, ...delivered];
+    const all = [...processing, ...inTransit, ...delivered, ...cancelled];
 
     return all;
   }),

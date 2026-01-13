@@ -140,7 +140,7 @@ export const ChatWidget = () => {
 
       <Button
         onClick={() => (isOpen ? setIsOpen(false) : handleOpen())}
-        className="h-14 w-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700"
+        className="h-14 w-14 rounded-full bg-zinc-900 text-white shadow-lg hover:bg-zinc-700"
         size="icon"
       >
         {isOpen ? <X /> : <MessageCircle />}
