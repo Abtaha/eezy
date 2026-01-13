@@ -111,7 +111,6 @@ export default function AdminOrderDetailPage() {
                   status: value,
                 })
               }
-              disabled={data.status === "cancelled"}
             >
               <SelectTrigger className="h-8 w-36 text-xs">
                 <SelectValue />
