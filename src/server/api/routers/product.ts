@@ -5,6 +5,8 @@ import { randomUUID } from "crypto";
 import { ilike } from "drizzle-orm";
 
 import { wishlistItem } from "@/server/db/schema";
+import { category } from "@/server/db/schema";
+import { TRPCError } from "@trpc/server";
 
 import {
   createTRPCRouter,
@@ -14,6 +16,7 @@ import {
   salesManagerProcedure,
 } from "@/server/api/trpc";
 import { sendWishlistEmail } from "@/server/services/send-wishlist";
+import { processRefundDecisionEmail } from "@/server/services/send-refund-email";
 
 export const productRouter = createTRPCRouter({
   get: publicProcedure
@@ -25,6 +28,7 @@ export const productRouter = createTRPCRouter({
         where: eq(product.id, input.id), //check if the product uuid matches the input uuid
         with: {
           ratings: true,
+          category: true,
         },
       });
 
@@ -34,6 +38,7 @@ export const productRouter = createTRPCRouter({
 
       return {
         ...awaitedproduct,
+        category: awaitedproduct.category.name,
         rating:
           awaitedproduct.ratings.length > 0
             ? awaitedproduct.ratings
@@ -47,11 +52,13 @@ export const productRouter = createTRPCRouter({
     const awaitedproductsarray = await ctx.db.query.product.findMany({
       with: {
         ratings: true,
+        category: true,
       },
     }); //find all products
 
     return awaitedproductsarray.map((product) => ({
       ...product,
+      category: product.category.name,
       rating:
         product.ratings.length > 0
           ? product.ratings
@@ -94,13 +101,24 @@ export const productRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const productCategory = await ctx.db.query.category.findFirst({
+        where: eq(category.name, input.category),
+      });
+
+      if (!productCategory) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
+      }
+
       const newProduct = await ctx.db
         .insert(product)
         .values({
           id: randomUUID(),
           name: input.name,
           model: input.model,
-          category: input.category,
+          categoryId: productCategory.id,
           cost: (input.cost ?? input.price / 2).toFixed(2),
           description: input.description ?? null,
           distributor: input.distributor ?? null,
@@ -149,15 +167,42 @@ export const productRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const productCategory = await ctx.db.query.category.findFirst({
+        where: eq(category.name, input.category),
+      });
+
+      if (!productCategory) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
+      }
+
       const relatedProducts = await ctx.db.query.product.findMany({
         where: and(
-          eq(product.category, input.category),
+          eq(product.categoryId, productCategory.id),
           ne(product.id, input.id),
         ),
+        with: {
+          ratings: true,
+          category: true,
+        },
         limit: input.limit,
       });
 
-      return relatedProducts;
+      return relatedProducts.map((p) => {
+        const rating =
+          p.ratings.length === 0
+            ? 0
+            : p.ratings.reduce((sum, r) => sum + r.rating, 0) /
+              p.ratings.length;
+
+        return {
+          ...p,
+          category: p.category.name,
+          rating,
+        };
+      });
     }),
 
   listForStockAdmin: productManagerProcedure.query(async ({ ctx }) => {
@@ -269,13 +314,24 @@ export const productRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const productCategory = await ctx.db.query.category.findFirst({
+        where: eq(category.name, input.category),
+      });
+
+      if (!productCategory) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Category not found",
+        });
+      }
+
       const newProduct = await ctx.db
         .insert(product)
         .values({
           id: randomUUID(),
           name: input.name,
           model: input.model,
-          category: input.category,
+          categoryId: productCategory.id,
           cost: (input.cost ?? input.price / 2).toFixed(2),
           description: input.description ?? null,
           distributor: input.distributor ?? null,

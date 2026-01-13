@@ -14,6 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useUploadThing } from "@/lib/uploadthing";
+import { authClient } from "@/lib/auth-client";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 type UploadResponse = {
   url: string;
@@ -43,6 +53,7 @@ function useImageUpload() {
 }
 
 export default function AddProductPage() {
+  const session = authClient.useSession();
   const router = useRouter();
   const createMutation = api.product.createAdmin.useMutation({
     onSuccess: () => {
@@ -51,6 +62,13 @@ export default function AddProductPage() {
       router.refresh();
     },
   });
+
+  const { data: categories, isLoading } = api.category.getAll.useQuery(
+    undefined,
+    {
+      enabled: !!session,
+    },
+  );
 
   const { uploadImage } = useImageUpload();
 
@@ -147,10 +165,33 @@ export default function AddProductPage() {
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Category *</p>
-              <Input
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              />
+              {!isLoading && categories && categories.length > 0 ? (
+                <Select
+                  value={category}
+                  onValueChange={(value) => setCategory(value)}
+                >
+                  <SelectTrigger
+                    className="h-8 w-full text-xs"
+                    // Prevent trigger click from bubbling to <tr>
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    // Extra safety: clicks inside dropdown shouldn't bubble
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {categories.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Loader2 className="h-8 w-full animate-spin text-gray-400" />
+              )}
             </div>
 
             <div className="space-y-2">
