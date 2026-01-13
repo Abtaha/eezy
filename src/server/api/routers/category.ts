@@ -1,8 +1,5 @@
 import * as z from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { user } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+import { createTRPCRouter } from "@/server/api/trpc";
 import { productManagerProcedure } from "@/server/api/trpc";
 import { category } from "@/server/db/schema";
 
