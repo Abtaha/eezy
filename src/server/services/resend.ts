@@ -31,6 +31,28 @@ class ResendService {
     }
   }
 
+  async sendBatchEmail({
+    recipients,
+    subject,
+    html,
+  }: {
+    recipients: string[];
+    subject: string;
+    html: string;
+  }) {
+    if (recipients.length === 0) return;
+
+    const uniqueRecipients = [...new Set(recipients)];
+
+    return await this.resend.emails.send({
+      from: "Eezy <eezy@abtahafarooq.com>",
+      to: "Wishlist Updates <wishlist@abtahafarooq.com>",
+      bcc: uniqueRecipients,
+      subject,
+      html,
+    });
+  }
+
   async sendEmailWithAttachment({
     to,
     subject,
