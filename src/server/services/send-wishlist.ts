@@ -98,6 +98,8 @@ export async function sendWishlistEmail(productId: string) {
   </div>
   `,
       });
+
+      await new Promise((r) => setTimeout(r, 600));
     }
   } catch (error) {
     console.error("Failed to process wishlist email:", error);
