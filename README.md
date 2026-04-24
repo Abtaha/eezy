@@ -1,29 +1,95 @@
-# Create T3 App
+# Project Overview
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+This is a full-stack Next.js web application bootstrapped with the [T3 Stack](https://create.t3.gg/). It is an e-commerce platform named "eezy" (inferred from `package.json` and directory structures like `/product`, `/checkout`, `/orders`).
 
-## What's next? How do I make an app with this?
+**Key Technologies:**
+*   **Framework:** Next.js (App Router, indicated by `src/app/`)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS with Radix UI primitives (likely via Shadcn UI components in `src/components/ui/`)
+*   **Database:** PostgreSQL
+*   **ORM:** Drizzle ORM
+*   **API:** tRPC for end-to-end typesafe APIs
+*   **Authentication:** Better Auth
+*   **Other Services:** 
+    *   UploadThing (for file/image uploads)
+    *   Ably (for real-time features/chat)
+    *   Resend (for sending emails, invoices, etc.)
+    *   React-pdf (for invoice generation)
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+## Architecture
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+The project is structured within the `src/` directory:
+*   `src/app/`: Next.js App Router containing pages for the main storefront `(app)`, authentication `(auth)`, and an admin dashboard `admin`. API routes are in `src/app/api/`.
+*   `src/components/`: Reusable React components, organized by domain (e.g., `admin`, `chat`, `home-page-components`) and UI primitives (`ui/`).
+*   `src/context/`: React context providers (e.g., `cart-context.tsx`).
+*   `src/hooks/`: Custom React hooks.
+*   `src/lib/`: Utility functions and client configurations (Ably, Auth, UploadThing).
+*   `src/server/`: Backend logic including tRPC routers (`api/`), database schema and connection (`db/`), authentication config (`auth/`), and external service integrations (`services/`).
+*   `src/trpc/`: tRPC client and server setup.
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## Building and Running
 
-## Learn More
+The project uses `pnpm` as its package manager.
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+**Development:**
+```bash
+# Start the development server (uses Turbopack)
+pnpm dev
+```
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+**Database Commands (Drizzle):**
+```bash
+# Generate migrations based on schema changes
+pnpm db:generate
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+# Apply migrations to the database
+pnpm db:migrate
 
-## How do I deploy this?
+# Push schema changes directly to the database (useful in dev)
+pnpm db:push
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+# Open Drizzle Studio to view/edit data
+pnpm db:studio
+```
+
+**Building & Production:**
+```bash
+# Build the application
+pnpm build
+
+# Start the built application
+pnpm start
+
+# Build and start
+pnpm preview
+```
+
+**Testing:**
+```bash
+# Run tests using Vitest
+pnpm test
+
+# Run tests with UI
+pnpm test:ui
+```
+
+**Linting & Formatting:**
+```bash
+# Run Next.js linting
+pnpm lint
+pnpm lint:fix
+
+# Check types
+pnpm typecheck
+
+# Check and fix formatting (Prettier)
+pnpm format:check
+pnpm format:write
+```
+
+## Development Conventions
+
+*   **Type Safety:** The project heavily relies on TypeScript and tRPC to ensure end-to-end type safety from the database (Drizzle) to the frontend components.
+*   **Component Structure:** UI components are primarily located in `src/components/ui/` and follow a modular approach, likely based on Shadcn UI. Domain-specific components are grouped into subfolders.
+*   **Database Schema:** The database schema is defined in `src/server/db/schema.ts` using Drizzle ORM.
+*   **Testing:** Vitest is used for testing, as configured in `vitest.config.ts`.
